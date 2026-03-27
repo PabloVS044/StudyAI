@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digitalizador de Apuntes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- KaTeX for rendering math -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #17171f;
+      --surface2: #1e1e28;
+      --border: #2a2a38;
+      --accent: #7c6af7;
+      --accent2: #5eead4;
+      --text: #e8e8f0;
+      --muted: #6b6b82;
+      --success: #34d399;
+      --error: #f87171;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+
+    /* Drop zone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: var(--surface);
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: #1e1e2e;
+    }
+    .dropzone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .dropzone-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .dropzone h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: .5rem; }
+    .dropzone p { color: var(--muted); font-size: .85rem; }
+
+    /* Preview thumbnails */
+    #previews {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-top: 1.25rem;
+    }
+    .thumb {
+      width: 90px; height: 90px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 2px solid var(--border);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .7rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #6255d4);
+      color: #fff;
+    }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+    }
+
+    /* Loading */
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    #results { margin-top: 2.5rem; }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .result-header img {
+      width: 60px; height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .result-header .fname {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .result-header .ftitle {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .result-body { padding: 1.25rem; }
+
+    /* Sections */
+    .section {
+      margin-bottom: 1.5rem;
+    }
+    .section-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: .6rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .text-content {
+      line-height: 1.75;
+      font-size: .93rem;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* Formula cards */
+    .formula-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      margin-bottom: .75rem;
+    }
+    .formula-desc {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .formula-render {
+      font-size: 1.05rem;
+      overflow-x: auto;
+      padding: .25rem 0;
+    }
+    .formula-plain {
+      font-size: .78rem;
+      color: var(--muted);
+      font-family: monospace;
+      margin-top: .4rem;
+    }
+
+    /* Lists */
+    .note-list {
+      padding-left: 1.5rem;
+      line-height: 1.8;
+      font-size: .93rem;
+    }
+
+    /* Definitions */
+    .def-item {
+      border-bottom: 1px solid var(--border);
+      padding: .5rem 0;
+      font-size: .93rem;
+    }
+    .def-item:last-child { border-bottom: none; }
+    .def-term { font-weight: 600; color: var(--accent2); }
+    .def-text { color: var(--text); margin-top: .2rem; }
+
+    /* Diagrams */
+    .diagram-item {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      margin-bottom: .5rem;
+      font-size: .9rem;
+      line-height: 1.6;
+      border-left: 3px solid #f59e0b;
+    }
+
+    /* Observations */
+    .obs-box {
+      background: #1a1a2e;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--success);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      font-size: .9rem;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* Error */
+    .error-box {
+      background: #2a1515;
+      border: 1px solid #5a2020;
+      border-radius: 8px;
+      padding: 1rem;
+      color: var(--error);
+      font-size: .9rem;
+    }
+
+    /* Copy button */
+    .copy-all {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      .dropzone { padding: 2rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Digitalizador de Apuntes</h1>
+    <p>Sube fotos de tus apuntes y extrae texto, fórmulas, listas y diagramas automáticamente</p>
+  </header>
+
+  <!-- Drop zone -->
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept="image/*" multiple />
+    <div class="dropzone-icon">📸</div>
+    <h2>Arrastra tus fotos aquí</h2>
+    <p>o haz clic para seleccionarlas &nbsp;·&nbsp; PNG, JPG, WEBP &nbsp;·&nbsp; máx. 20 MB por imagen</p>
+  </div>
+
+  <div id="previews"></div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="extractBtn" disabled onclick="extract()">
+      ✨ Extraer contenido
+    </button>
+    <button class="btn btn-secondary" onclick="reset()">Limpiar</button>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Analizando apuntes con IA…</p>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const dropzone = document.getElementById('dropzone');
+  const previews = document.getElementById('previews');
+  const extractBtn = document.getElementById('extractBtn');
+  const loading = document.getElementById('loading');
+  const results = document.getElementById('results');
+  let selectedFiles = [];
+
+  // Drag & drop
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    addFiles([...e.dataTransfer.files]);
+  });
+  fileInput.addEventListener('change', () => addFiles([...fileInput.files]));
+
+  function addFiles(files) {
+    files.forEach(f => {
+      if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+        selectedFiles.push(f);
+        const img = document.createElement('img');
+        img.className = 'thumb';
+        img.src = URL.createObjectURL(f);
+        img.title = f.name;
+        previews.appendChild(img);
+      }
+    });
+    extractBtn.disabled = selectedFiles.length === 0;
+  }
+
+  function reset() {
+    selectedFiles = [];
+    previews.innerHTML = '';
+    results.innerHTML = '';
+    loading.style.display = 'none';
+    extractBtn.disabled = true;
+    fileInput.value = '';
+  }
+
+  async function extract() {
+    if (selectedFiles.length === 0) return;
+    loading.style.display = 'block';
+    results.innerHTML = '';
+    extractBtn.disabled = true;
+
+    const form = new FormData();
+    selectedFiles.forEach(f => form.append('files', f));
+
+    try {
+      const res = await fetch('/extract', { method: 'POST', body: form });
+      const data = await res.json();
+      renderResults(data.results);
+    } catch (e) {
+      results.innerHTML = `<div class="error-box">Error de conexión: ${e.message}</div>`;
+    } finally {
+      loading.style.display = 'none';
+      extractBtn.disabled = false;
+    }
+  }
+
+  function renderResults(items) {
+    results.innerHTML = '';
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'result-card';
+
+      const title = item.content?.titulo || item.filename;
+      card.innerHTML = `
+        <div class="result-header">
+          ${item.preview ? `<img src="${item.preview}" alt="preview" />` : ''}
+          <div>
+            <div class="ftitle">${esc(title)}</div>
+            <div class="fname">${esc(item.filename)}</div>
+          </div>
+        </div>
+        <div class="result-body">
+          ${item.error ? renderError(item.error) : renderContent(item.content)}
+        </div>`;
+
+      results.appendChild(card);
+
+      // Re-render KaTeX after DOM insert
+      if (window.renderMathInElement) {
+        renderMathInElement(card, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    });
+  }
+
+  function renderError(err) {
+    return `<div class="error-box">⚠️ ${esc(err)}</div>`;
+  }
+
+  function renderContent(c) {
+    if (!c) return '<div class="error-box">No se pudo extraer contenido.</div>';
+    let html = '';
+
+    if (c.texto_principal) {
+      html += section('📝 Texto principal', `<div class="text-content">${esc(c.texto_principal)}</div>`);
+    }
+
+    if (c.formulas && c.formulas.length > 0) {
+      const cards = c.formulas.map(f => `
+        <div class="formula-card">
+          ${f.descripcion ? `<div class="formula-desc">${esc(f.descripcion)}</div>` : ''}
+          <div class="formula-render">$$${f.latex || f.texto_plano}$$</div>
+          ${f.texto_plano ? `<div class="formula-plain">${esc(f.texto_plano)}</div>` : ''}
+        </div>`).join('');
+      html += section('∑ Fórmulas', cards);
+    }
+
+    if (c.listas && c.listas.length > 0) {
+      const listsHtml = c.listas.map(l => {
+        const tag = l.tipo === 'numerada' ? 'ol' : 'ul';
+        const items = (l.items || []).map(i => `<li>${esc(i)}</li>`).join('');
+        return `<${tag} class="note-list">${items}</${tag}>`;
+      }).join('<br>');
+      html += section('📋 Listas', listsHtml);
+    }
+
+    if (c.definiciones && c.definiciones.length > 0) {
+      const defs = c.definiciones.map(d => `
+        <div class="def-item">
+          <div class="def-term">${esc(d.termino)}</div>
+          <div class="def-text">${esc(d.definicion)}</div>
+        </div>`).join('');
+      html += section('📖 Definiciones', defs);
+    }
+
+    if (c.diagramas_figuras && c.diagramas_figuras.length > 0) {
+      const diags = c.diagramas_figuras.map(d =>
+        `<div class="diagram-item">🖼 ${esc(d.descripcion)}</div>`
+      ).join('');
+      html += section('🖼 Diagramas y figuras', diags);
+    }
+
+    if (c.observaciones) {
+      html += section('💡 Observaciones', `<div class="obs-box">${esc(c.observaciones)}</div>`);
+    }
+
+    // Copy as markdown button
+    html += `
+      <div class="copy-all">
+        <button class="btn btn-secondary" onclick="copyMarkdown(this)" data-content='${encodeURIComponent(JSON.stringify(c))}'>
+          📋 Copiar como Markdown
+        </button>
+      </div>`;
+
+    return html || '<div style="color:var(--muted)">No se detectó contenido estructurado.</div>';
+  }
+
+  function section(label, body) {
+    return `<div class="section">
+      <div class="section-label">${label}</div>
+      ${body}
+    </div>`;
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function copyMarkdown(btn) {
+    const c = JSON.parse(decodeURIComponent(btn.dataset.content));
+    let md = '';
+    if (c.titulo) md += `# ${c.titulo}\n\n`;
+    if (c.texto_principal) md += `## Texto\n${c.texto_principal}\n\n`;
+    if (c.formulas?.length) {
+      md += `## Fórmulas\n`;
+      c.formulas.forEach(f => {
+        if (f.descripcion) md += `**${f.descripcion}**\n`;
+        md += `$$${f.latex || f.texto_plano}$$\n\n`;
+      });
+    }
+    if (c.listas?.length) {
+      md += `## Listas\n`;
+      c.listas.forEach(l => {
+        l.items.forEach((item, i) => {
+          md += l.tipo === 'numerada' ? `${i+1}. ${item}\n` : `- ${item}\n`;
+        });
+        md += '\n';
+      });
+    }
+    if (c.definiciones?.length) {
+      md += `## Definiciones\n`;
+      c.definiciones.forEach(d => md += `**${d.termino}**: ${d.definicion}\n`);
+      md += '\n';
+    }
+    if (c.diagramas_figuras?.length) {
+      md += `## Diagramas\n`;
+      c.diagramas_figuras.forEach(d => md += `- ${d.descripcion}\n`);
+      md += '\n';
+    }
+    if (c.observaciones) md += `## Observaciones\n${c.observaciones}\n`;
+
+    navigator.clipboard.writeText(md).then(() => {
+      btn.textContent = '✅ Copiado!';
+      setTimeout(() => btn.textContent = '📋 Copiar como Markdown', 2000);
+    });
+  }
+</script>
+</body>
+</html>

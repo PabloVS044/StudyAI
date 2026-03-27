@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3 -m venv venv)",
+      "Bash(venv/bin/pip install:*)",
+      "Bash(venv/bin/pip show:*)",
+      "Bash(venv/bin/python -c \"import mistralai; print\\(dir\\(mistralai\\)\\)\")",
+      "Bash(venv/bin/pip uninstall:*)",
+      "Bash(venv/bin/python -c \"from mistralai import Mistral; print\\(''OK''\\)\")",
+      "Bash(venv/bin/python -c \"import mistralai; print\\(mistralai.__file__\\)\")",
+      "Bash(venv/bin/python -c \"from mistralai.client.sdk import SDK; print\\(''OK''\\)\")",
+      "Bash(venv/bin/python -c \"import mistralai.client.sdk as s; print\\([x for x in dir\\(s\\) if not x.startswith\\(''_''\\)]\\)\")"
+    ]
+  }
+}
