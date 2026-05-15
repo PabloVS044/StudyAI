@@ -16,7 +16,7 @@ export default function SearchPage() {
   const [selected, setSelected] = useState<NoteDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const debounceRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

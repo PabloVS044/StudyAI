@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import type { AppConfig, ExtractResult, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
