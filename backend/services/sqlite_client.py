@@ -14,6 +14,12 @@ def init_db(db_path: str = "studyai.db") -> None:
     schema = Path(__file__).parent.parent / "db" / "schema.sql"
     with get_conn() as conn:
         conn.executescript(schema.read_text())
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(notes)").fetchall()
+        }
+        if "tags" not in columns:
+            conn.execute("ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'")
 
 
 def _path() -> str:
@@ -37,14 +43,15 @@ def create_note(
     filename: str,
     image_ext: Optional[str],
     content_json: str,
+    tags: str = "[]",
 ) -> None:
     with get_conn() as conn:
         conn.execute(
             """
-            INSERT OR REPLACE INTO notes (note_id, title, filename, image_ext, content_json)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO notes (note_id, title, filename, image_ext, content_json, tags)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (note_id, title, filename, image_ext, content_json),
+            (note_id, title, filename, image_ext, content_json, tags),
         )
 
 

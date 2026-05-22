@@ -25,6 +25,17 @@ class SearchRequest(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _clean_tags(value) -> list[str]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except Exception:
+            value = [value]
+    if not isinstance(value, list):
+        return []
+    return [str(tag).strip() for tag in value if str(tag).strip()][:4]
+
+
 def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
     """Run in background — generate embedding and store in Pinecone."""
     text = embeddings.note_to_embed_text(content)
@@ -39,6 +50,7 @@ def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
             "filename": filename,
             "has_formulas": bool(content.get("formulas")),
             "has_diagrams": bool(content.get("diagramas_figuras")),
+            "tags": _clean_tags(content.get("tags")),
         },
     )
 
@@ -46,6 +58,7 @@ def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
 def _note_to_item(row: dict) -> dict:
     c = sqlite_client.note_content(row)
     preview = (c.get("texto_principal") or c.get("titulo") or row["filename"])[:300]
+    tags = _clean_tags(row.get("tags")) or _clean_tags(c.get("tags"))
     return {
         "note_id": row["note_id"],
         "title": row["title"],
@@ -57,6 +70,7 @@ def _note_to_item(row: dict) -> dict:
         "has_diagrams": bool(c.get("diagramas_figuras")),
         "notion_url": row.get("notion_url"),
         "drive_url": row.get("drive_url"),
+        "tags": tags,
     }
 
 
@@ -64,17 +78,21 @@ def _note_to_item(row: dict) -> dict:
 
 @router.post("/save")
 async def save_note(req: SaveRequest, bg: BackgroundTasks):
-    title = (req.content.get("titulo") or req.filename)[:500]
+    content = dict(req.content)
+    tags = _clean_tags(content.get("tags"))
+    content["tags"] = tags
+    title = (content.get("titulo") or req.filename)[:500]
     sqlite_client.create_note(
         note_id=req.note_id,
         title=title,
         filename=req.filename,
         image_ext=req.image_ext,
-        content_json=json.dumps(req.content, ensure_ascii=False),
+        content_json=json.dumps(content, ensure_ascii=False),
+        tags=json.dumps(tags, ensure_ascii=False),
     )
     # Embedding is async — doesn't block the save response
     if settings.PINECONE_API_KEY and settings.MISTRAL_API_KEY:
-        bg.add_task(_embed_and_upsert, req.note_id, req.filename, req.content)
+        bg.add_task(_embed_and_upsert, req.note_id, req.filename, content)
 
     return {"note_id": req.note_id, "saved": True}
 
