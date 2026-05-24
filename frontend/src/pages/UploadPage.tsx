@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
-import { Upload, Sparkles, X } from "lucide-react";
+import { Upload, Sparkles, X, Camera } from "lucide-react";
 import { extractImages, imageUrl } from "../api/client";
 import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
+import CameraModal from "../components/CameraModal";
 import type { ExtractResult } from "../types/note";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"]);
@@ -14,6 +15,7 @@ export default function UploadPage() {
   const [results, setResults] = useState<ExtractResult[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
 
   const addFiles = useCallback((incoming: File[]) => {
     const valid = incoming.filter((f) => ALLOWED.has(f.type));
@@ -52,6 +54,10 @@ export default function UploadPage() {
     setError("");
   }
 
+  function handleCameraCapture(file: File) {
+    addFiles([file]);
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-white mb-1">Digitalizar Apuntes</h1>
@@ -82,6 +88,15 @@ export default function UploadPage() {
         <p className="font-semibold text-slate-300">Arrastra tus fotos aquí</p>
         <p className="text-sm text-slate-500 mt-1">o haz clic para seleccionar · PNG, JPG, WEBP · máx. 20 MB</p>
       </div>
+
+      {/* Camera button */}
+      <button
+        onClick={() => setShowCamera(true)}
+        className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-slate-600 hover:border-violet-500 hover:bg-violet-500/5 rounded-xl text-slate-400 hover:text-violet-400 text-sm font-medium transition-all"
+      >
+        <Camera size={16} />
+        Usar cámara del dispositivo
+      </button>
 
       {/* Previews */}
       {files.length > 0 && (
@@ -152,6 +167,13 @@ export default function UploadPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {showCamera && (
+        <CameraModal
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
       )}
     </div>
   );
