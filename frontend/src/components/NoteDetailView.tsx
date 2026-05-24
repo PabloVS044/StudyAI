@@ -1,6 +1,6 @@
 /**
  * NoteDetailView — renders the full content of an extracted/saved note.
- * Used both in UploadPage (fresh extraction) and in the Library modal.
+ * Used in CapturePage (fresh extraction) and in the Library modal.
  */
 import { imageUrl, saveNote } from "../api/client";
 import FormulaBlock from "./FormulaBlock";
