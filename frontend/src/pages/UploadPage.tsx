@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Upload, Sparkles, X, Camera } from "lucide-react";
-import { extractImages, imageUrl } from "../api/client";
+import { extractImages, imageUrl, saveNote } from "../api/client";
 import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
 import CameraModal from "../components/CameraModal";
@@ -40,6 +40,26 @@ export default function UploadPage() {
     try {
       const data = await extractImages(files);
       setResults(data);
+
+      const autoSaved = new Set<string>();
+      await Promise.all(
+        data
+          .filter((r) => r.content && !r.error)
+          .map(async (r) => {
+            try {
+              await saveNote({
+                note_id: r.note_id,
+                filename: r.filename,
+                image_ext: r.image_ext,
+                content: r.content!,
+              });
+              autoSaved.add(r.note_id);
+            } catch {
+              // fallo silencioso — nota visible, usuario puede guardar manualmente
+            }
+          })
+      );
+      setSavedIds(autoSaved);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al conectar con el backend");
     } finally {
