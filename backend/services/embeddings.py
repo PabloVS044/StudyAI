@@ -1,5 +1,8 @@
 """Generate text embeddings using Mistral's mistral-embed model (1024 dims)."""
-from mistralai import Mistral
+try:
+    from mistralai import Mistral
+except ImportError:
+    from mistralai.client import Mistral
 
 
 def get_embedding(api_key: str, text: str) -> list[float]:

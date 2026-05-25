@@ -2,7 +2,10 @@
 import base64
 import re
 import json
-from mistralai import Mistral
+try:
+    from mistralai import Mistral
+except ImportError:
+    from mistralai.client import Mistral
 
 _PROMPT = """Analiza esta imagen de apuntes de clase y extrae TODO el contenido de forma estructurada.
 
