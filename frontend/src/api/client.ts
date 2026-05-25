@@ -100,6 +100,18 @@ export function getConfig(): Promise<AppConfig> {
   return req("/api/config");
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────────
+export function chatRag(question: string): Promise<{
+  answer: string;
+  sources: { note_id: string; title: string; score: number }[];
+}> {
+  return req("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 export function imageUrl(noteId: string): string {
   return `${BASE}/api/uploads/${noteId}`;
