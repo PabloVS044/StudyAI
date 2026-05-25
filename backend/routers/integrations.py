@@ -158,8 +158,11 @@ async def export_obsidian(note_id: str):
         notion_url=row.get("notion_url"),
         drive_url=row.get("drive_url"),
     )
+    import unicodedata
     title = content.get("titulo") or row["filename"]
-    safe = re.sub(r'[^\w\s\-]', '', title).strip().replace(' ', '_') or "nota"
+    # Normalizar caracteres unicode para remover acentos (ej. Física -> Fisica)
+    normalized = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
+    safe = re.sub(r'[^\w\s\-]', '', normalized).strip().replace(' ', '_') or "nota"
     return Response(
         content=md.encode("utf-8"),
         media_type="text/markdown; charset=utf-8",
@@ -205,7 +208,10 @@ async def validate_integrations():
     mistral_valid = False
     if settings.MISTRAL_API_KEY:
         try:
-            from mistralai import Mistral
+            try:
+                from mistralai import Mistral
+            except ImportError:
+                from mistralai.client import Mistral
             client = Mistral(api_key=settings.MISTRAL_API_KEY)
             client.models.list()
             mistral_valid = True
