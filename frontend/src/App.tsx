@@ -10,13 +10,13 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import OrganizedDocumentPage from "./pages/OrganizedDocumentPage";
 import ProcessingPage from "./pages/ProcessingPage";
-import UploadPage from "./pages/UploadPage";
 import SearchPage from "./pages/SearchPage";
 
 export default function App() {
   return (
     <div className="flex h-screen bg-background text-on-background overflow-hidden">
       <Sidebar />
+      <div className="flex-1 overflow-y-auto">
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/capture" element={<CapturePage />} />
@@ -30,9 +30,9 @@ export default function App() {
         <Route path="/processing/:id" element={<ProcessingPage />} />
 
         {/* Legacy routes */}
-        <Route path="/upload" element={<UploadPage />} />
         <Route path="/search" element={<SearchPage />} />
       </Routes>
+      </div>
     </div>
   );
 }

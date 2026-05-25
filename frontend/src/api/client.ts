@@ -98,6 +98,19 @@ export function syncDrive(noteId: string): Promise<{ success: boolean; url: stri
   return req(`/api/integrations/drive/${noteId}`, { method: "POST" });
 }
 
+export function getGoogleAuthUrl(): Promise<{ auth_url: string }> {
+  return req("/api/integrations/google/auth-url");
+}
+
+export function validateIntegrations(): Promise<{
+  mistral: boolean;
+  pinecone: boolean;
+  notion: boolean;
+  drive: boolean;
+}> {
+  return req("/api/integrations/validate", { method: "POST" });
+}
+
 export async function exportObsidian(noteId: string): Promise<void> {
   const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
   if (!res.ok) throw new Error("Error al exportar");
@@ -120,6 +133,18 @@ export function saveObsidianVault(noteId: string): Promise<{ success: boolean; p
 // ── Config ────────────────────────────────────────────────────────────────────
 export function getConfig(): Promise<AppConfig> {
   return req("/api/config");
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+export function chatRag(question: string): Promise<{
+  answer: string;
+  sources: { note_id: string; title: string; score: number }[];
+}> {
+  return req("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
