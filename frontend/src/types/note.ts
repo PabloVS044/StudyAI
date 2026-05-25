@@ -26,6 +26,7 @@ export interface NoteContent {
   diagramas_figuras: DiagramaFigura[];
   definiciones: Definicion[];
   observaciones?: string;
+  tags?: string[];
 }
 
 /** Returned by POST /api/extract (before saving). */
@@ -50,6 +51,7 @@ export interface NoteListItem {
   has_diagrams: boolean;
   notion_url?: string;
   drive_url?: string;
+  tags: string[];
 }
 
 /** Returned by GET /api/notes/:id (detail). */

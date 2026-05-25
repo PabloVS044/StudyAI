@@ -1,4 +1,16 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: string }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  }
+
   return (
     <header className="bg-surface-bright/80 backdrop-blur-md shadow-sm fixed top-0 right-0 left-0 md:left-64 z-40 flex justify-between items-center h-16 px-gutter w-full md:max-w-[calc(100%-16rem)]">
       <div className="flex items-center gap-md flex-1">
@@ -8,6 +20,9 @@ export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: stri
             className="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-body-md focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline-variant"
             placeholder={searchPlaceholder ?? "Search..."}
             type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
       </div>

@@ -54,6 +54,41 @@ export function searchNotes(query: string, topK = 5): Promise<SearchResultItem[]
   });
 }
 
+// ── Summaries ────────────────────────────────────────────────────────────────
+export interface SummaryRequest {
+  note_ids: string[];
+  style?: "brief" | "detailed" | "bullet_points";
+  language?: string;
+}
+
+export interface SummaryResponse {
+  title: string;
+  summary: string;
+  key_concepts: string[];
+  note_ids: string[];
+  style: string;
+}
+
+export interface SummaryNoteItem {
+  note_id: string;
+  title: string;
+  filename: string;
+  date: string;
+  tags: string[];
+}
+
+export function generateSummary(payload: SummaryRequest): Promise<SummaryResponse> {
+  return req("/api/summaries/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
+  return req("/api/summaries/list");
+}
+
 // ── Integrations ──────────────────────────────────────────────────────────────
 export function syncNotion(noteId: string): Promise<{ success: boolean; url: string }> {
   return req(`/api/integrations/notion/${noteId}`, { method: "POST" });
