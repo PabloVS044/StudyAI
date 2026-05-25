@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: "dashboard" },
+  { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { to: "/capture", label: "Capture", icon: "add_a_photo" },
   { to: "/library", label: "Library", icon: "library_books" },
   { to: "/ai-summaries", label: "AI Summaries", icon: "psychology" },
@@ -15,10 +15,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (to: string) => {
-    if (to === "/") return location.pathname === "/";
-    return location.pathname.startsWith(to);
-  };
+  const isActive = (to: string) => location.pathname.startsWith(to);
 
   return (
     <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm py-md px-sm z-50">
