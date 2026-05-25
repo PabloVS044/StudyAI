@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -52,6 +52,11 @@ export function searchNotes(query: string, topK = 5): Promise<SearchResultItem[]
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, top_k: topK }),
   });
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
+  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
 }
 
 // ── Integrations ──────────────────────────────────────────────────────────────
