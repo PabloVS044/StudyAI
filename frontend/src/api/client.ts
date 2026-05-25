@@ -63,6 +63,10 @@ export function syncDrive(noteId: string): Promise<{ success: boolean; url: stri
   return req(`/api/integrations/drive/${noteId}`, { method: "POST" });
 }
 
+export function getGoogleAuthUrl(): Promise<{ auth_url: string }> {
+  return req("/api/integrations/google/auth-url");
+}
+
 export async function exportObsidian(noteId: string): Promise<void> {
   const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
   if (!res.ok) throw new Error("Error al exportar");

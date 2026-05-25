@@ -1,4 +1,5 @@
 import TopBar from "../components/TopBar";
+import { getGoogleAuthUrl } from "../api/client";
 
 const connectedIntegrations = [
   {
@@ -50,6 +51,15 @@ const exportFormats = [
 ];
 
 export default function IntegrationsPage() {
+  const handleConnectDrive = async () => {
+    try {
+      const { auth_url } = await getGoogleAuthUrl();
+      window.location.href = auth_url;
+    } catch (err) {
+      alert("Error al iniciar el flujo de Google Drive: " + (err as Error).message);
+    }
+  };
+
   return (
     <>
       <TopBar searchPlaceholder="Search..." />
@@ -113,7 +123,10 @@ export default function IntegrationsPage() {
                     <h4 className="text-body-lg text-on-surface mb-1 font-bold">Cloud Folders</h4>
                     <p className="text-body-md text-on-surface-variant mb-6">Backup raw PDFs and original capture files.</p>
                   </div>
-                  <button className="px-6 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md hover:bg-surface transition-colors flex items-center gap-2">
+                  <button
+                    onClick={handleConnectDrive}
+                    className="px-6 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md hover:bg-surface transition-colors flex items-center gap-2"
+                  >
                     <span className="material-symbols-outlined text-[18px]">add</span> Connect Drive
                   </button>
                 </div>

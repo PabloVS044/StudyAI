@@ -46,11 +46,81 @@ async def sync_notion(note_id: str):
 
 # ── Google Drive ──────────────────────────────────────────────────────────────
 
+@router.get("/google/auth-url")
+async def google_auth_url():
+    if not settings.drive_enabled:
+        raise HTTPException(status_code=400, detail="Google Drive no configurado (faltan GOOGLE_CLIENT_ID y/o GOOGLE_CLIENT_SECRET)")
+
+    import google_auth_oauthlib.flow
+    client_config = {
+        "web": {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+    }
+
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        client_config,
+        scopes=["https://www.googleapis.com/auth/drive.file"],
+        redirect_uri=settings.GOOGLE_REDIRECT_URI
+    )
+
+    auth_url, _ = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent"
+    )
+    return {"auth_url": auth_url}
+
+
+@router.get("/google/callback")
+async def google_callback(code: str):
+    if not settings.drive_enabled:
+        raise HTTPException(status_code=400, detail="Google Drive no configurado")
+
+    import google_auth_oauthlib.flow
+    client_config = {
+        "web": {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+    }
+
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        client_config,
+        scopes=["https://www.googleapis.com/auth/drive.file"],
+        redirect_uri=settings.GOOGLE_REDIRECT_URI
+    )
+
+    try:
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        with open(settings.GOOGLE_TOKEN_PATH, "w") as f:
+            f.write(credentials.to_json())
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error al obtener token de Google: {exc}")
+
+    from fastapi.responses import RedirectResponse
+    frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
+    if not frontend_url.endswith("/integrations"):
+        frontend_url = frontend_url.rstrip("/") + "/integrations"
+
+    return RedirectResponse(url=frontend_url)
+
+
 @router.post("/drive/{note_id}")
 async def sync_drive(note_id: str):
     if not settings.drive_enabled:
         raise HTTPException(status_code=400,
-                            detail="Google Drive no configurado (falta GOOGLE_SERVICE_ACCOUNT_JSON)")
+                            detail="Google Drive no configurado (faltan GOOGLE_CLIENT_ID y/o GOOGLE_CLIENT_SECRET)")
+
+    if not settings.drive_authenticated:
+        raise HTTPException(status_code=400,
+                            detail="Google Drive no autenticado. Por favor, conecta tu cuenta de Google.")
 
     row = _require_note(note_id)
 
@@ -59,7 +129,7 @@ async def sync_drive(note_id: str):
             note_id=note_id,
             original_filename=row["filename"],
             uploads_dir=settings.UPLOADS_DIR,
-            service_account_json=settings.GOOGLE_SERVICE_ACCOUNT_JSON,
+            token_path=settings.GOOGLE_TOKEN_PATH,
             drive_folder_id=settings.GOOGLE_DRIVE_FOLDER_ID or None,
         )
     except Exception as exc:
