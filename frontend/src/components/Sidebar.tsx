@@ -4,6 +4,7 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: "dashboard" },
   { to: "/capture", label: "Capture", icon: "add_a_photo" },
   { to: "/library", label: "Library", icon: "library_books" },
+  { to: "/search", label: "Search", icon: "search" },
   { to: "/ai-summaries", label: "AI Summaries", icon: "psychology" },
   { to: "/flashcards", label: "Flashcards", icon: "quiz" },
   { to: "/concept-maps", label: "Concept Maps", icon: "hub" },
