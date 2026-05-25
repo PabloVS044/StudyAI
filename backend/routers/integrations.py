@@ -193,3 +193,69 @@ async def save_obsidian_vault(note_id: str):
 
     sqlite_client.update_note(note_id, obsidian_path=path)
     return {"success": True, "path": path}
+
+
+# ── Validation ────────────────────────────────────────────────────────────────
+
+@router.post("/validate")
+async def validate_integrations():
+    import os
+
+    # 1. Mistral API Key validation
+    mistral_valid = False
+    if settings.MISTRAL_API_KEY:
+        try:
+            from mistralai import Mistral
+            client = Mistral(api_key=settings.MISTRAL_API_KEY)
+            client.models.list()
+            mistral_valid = True
+        except Exception:
+            pass
+
+    # 2. Pinecone validation
+    pinecone_valid = False
+    if settings.PINECONE_API_KEY:
+        try:
+            from pinecone import Pinecone
+            pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+            indexes = [idx.name for idx in pc.list_indexes()]
+            if settings.PINECONE_INDEX_NAME in indexes:
+                pinecone_valid = True
+        except Exception:
+            pass
+
+    # 3. Notion validation
+    notion_valid = False
+    if settings.NOTION_TOKEN:
+        try:
+            from notion_client import Client
+            client = Client(auth=settings.NOTION_TOKEN)
+            client.users.me()
+            notion_valid = True
+        except Exception:
+            pass
+
+    # 4. Google OAuth validation
+    drive_valid = False
+    if settings.drive_enabled and settings.drive_authenticated:
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            creds = Credentials.from_authorized_user_file(settings.GOOGLE_TOKEN_PATH, ["https://www.googleapis.com/auth/drive.file"])
+            if not creds.valid:
+                if creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                    with open(settings.GOOGLE_TOKEN_PATH, "w") as token_file:
+                        token_file.write(creds.to_json())
+                    drive_valid = True
+            else:
+                drive_valid = True
+        except Exception:
+            pass
+
+    return {
+        "mistral": mistral_valid,
+        "pinecone": pinecone_valid,
+        "notion": notion_valid,
+        "drive": drive_valid
+    }

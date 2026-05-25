@@ -67,6 +67,15 @@ export function getGoogleAuthUrl(): Promise<{ auth_url: string }> {
   return req("/api/integrations/google/auth-url");
 }
 
+export function validateIntegrations(): Promise<{
+  mistral: boolean;
+  pinecone: boolean;
+  notion: boolean;
+  drive: boolean;
+}> {
+  return req("/api/integrations/validate", { method: "POST" });
+}
+
 export async function exportObsidian(noteId: string): Promise<void> {
   const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
   if (!res.ok) throw new Error("Error al exportar");

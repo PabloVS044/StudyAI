@@ -1,47 +1,6 @@
+import { useEffect, useState } from "react";
 import TopBar from "../components/TopBar";
-import { getGoogleAuthUrl } from "../api/client";
-
-const connectedIntegrations = [
-  {
-    name: "Obsidian",
-    icon: "folder_data",
-    color: "#7C3AED",
-    desc: "Syncs daily notes and markdown summaries.",
-    status: "connected",
-    label: "Connected",
-    statusBg: "bg-primary/10",
-    statusText: "text-primary",
-    lastSync: "2 hours ago",
-    action: "Configure",
-    actionStyle: "outline",
-  },
-  {
-    name: "Google Docs",
-    icon: "description",
-    color: "#4285F4",
-    desc: "Export full documents and collaborative notes.",
-    status: "connected",
-    label: "Connected",
-    statusBg: "bg-primary/10",
-    statusText: "text-primary",
-    lastSync: "Just now",
-    action: "Configure",
-    actionStyle: "outline",
-  },
-  {
-    name: "Notion",
-    icon: "dns",
-    color: "currentColor",
-    desc: "Database sync for flashcards and concepts.",
-    status: "pending",
-    label: "Pending Auth",
-    statusBg: "bg-secondary/10",
-    statusText: "text-secondary",
-    lastSync: "Action required to complete setup",
-    action: "Authenticate",
-    actionStyle: "secondary",
-  },
-];
+import { getGoogleAuthUrl, validateIntegrations } from "../api/client";
 
 const exportFormats = [
   { icon: "article", title: "Full Document", formats: "PDF, DOCX" },
@@ -51,6 +10,29 @@ const exportFormats = [
 ];
 
 export default function IntegrationsPage() {
+  const [statuses, setStatuses] = useState({
+    mistral: false,
+    pinecone: false,
+    notion: false,
+    drive: false,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchStatuses = async () => {
+    try {
+      const data = await validateIntegrations();
+      setStatuses(data);
+    } catch (err) {
+      console.error("Error al validar integraciones:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatuses();
+  }, []);
+
   const handleConnectDrive = async () => {
     try {
       const { auth_url } = await getGoogleAuthUrl();
@@ -59,6 +41,63 @@ export default function IntegrationsPage() {
       alert("Error al iniciar el flujo de Google Drive: " + (err as Error).message);
     }
   };
+
+  const integrationsList = [
+    {
+      name: "Obsidian",
+      icon: "folder_data",
+      color: "#7C3AED",
+      desc: "Syncs daily notes and markdown summaries locally.",
+      status: "connected",
+      label: "Connected",
+      statusBg: "bg-primary/10",
+      statusText: "text-primary",
+      lastSync: "Local vault integration",
+      action: "Configure",
+      actionStyle: "outline" as const,
+      onAction: () => {
+        alert("Configura la ruta de tu Obsidian Vault en el archivo .env (OBSIDIAN_VAULT_PATH).");
+      }
+    },
+    {
+      name: "Google Drive",
+      icon: "description",
+      color: "#4285F4",
+      desc: "Upload note images to your Google Drive folder.",
+      status: statuses.drive ? "connected" : "pending",
+      label: statuses.drive ? "Connected" : "Disconnected",
+      statusBg: statuses.drive ? "bg-primary/10" : "bg-secondary/10",
+      statusText: statuses.drive ? "text-primary" : "text-secondary",
+      lastSync: statuses.drive ? "OAuth2 connection active" : "Requires authentication",
+      action: statuses.drive ? "Disconnect" : "Connect",
+      actionStyle: statuses.drive ? ("outline" as const) : ("secondary" as const),
+      onAction: () => {
+        if (!statuses.drive) {
+          handleConnectDrive();
+        } else {
+          alert("Para desconectar, elimina el archivo 'google_token.json' en el backend o revoca el acceso en tu cuenta de Google.");
+        }
+      }
+    },
+    {
+      name: "Notion",
+      icon: "dns",
+      color: "currentColor",
+      desc: "Database sync for flashcards and concepts.",
+      status: statuses.notion ? "connected" : "pending",
+      label: statuses.notion ? "Connected" : "Pending Auth",
+      statusBg: statuses.notion ? "bg-primary/10" : "bg-secondary/10",
+      statusText: statuses.notion ? "text-primary" : "text-secondary",
+      lastSync: statuses.notion ? "API Token is valid" : "Action required to complete setup",
+      action: statuses.notion ? "Connected" : "Authenticate",
+      actionStyle: statuses.notion ? ("outline" as const) : ("secondary" as const),
+      onAction: () => {
+        if (!statuses.notion) {
+          alert("Configura tu NOTION_TOKEN y NOTION_DATABASE_ID en tu archivo .env.");
+        }
+      }
+    },
+  ];
 
   return (
     <>
@@ -78,13 +117,16 @@ export default function IntegrationsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
             {/* Active Integrations */}
             <div className="lg:col-span-2 flex flex-col gap-md">
-              <h3 className="text-headline-md text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">sync</span>
-                Active Integrations
-              </h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-headline-md text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">sync</span>
+                  Active Integrations
+                </h3>
+                {loading && <span className="text-caption text-outline animate-pulse">Checking statuses...</span>}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-                {connectedIntegrations.map((int, i) => (
+                {integrationsList.map((int, i) => (
                   <div
                     key={i}
                     className={`bg-surface rounded-xl p-md border border-surface-variant shadow-[0_2px_4px_rgba(21,69,57,0.05)] flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300 ${int.status === "pending" ? "opacity-80" : ""}`}
@@ -103,6 +145,7 @@ export default function IntegrationsPage() {
                       <div className="text-caption text-outline mb-4">{int.lastSync}</div>
                     </div>
                     <button
+                      onClick={int.onAction}
                       className={`w-full py-2 rounded-lg text-label-md transition-colors ${
                         int.actionStyle === "outline"
                           ? "border border-outline-variant text-on-surface-variant hover:bg-surface-container-low"
@@ -115,26 +158,59 @@ export default function IntegrationsPage() {
                 ))}
 
                 {/* Add Integration Card */}
-                <div className="bg-surface-container-low rounded-xl p-md border border-dashed border-outline-variant flex flex-col justify-between items-center text-center">
-                  <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mb-4 mt-2">
-                    <span className="material-symbols-outlined text-outline text-2xl">cloud_off</span>
+                {!statuses.drive && (
+                  <div className="bg-surface-container-low rounded-xl p-md border border-dashed border-outline-variant flex flex-col justify-between items-center text-center">
+                    <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mb-4 mt-2">
+                      <span className="material-symbols-outlined text-outline text-2xl">cloud_off</span>
+                    </div>
+                    <div>
+                      <h4 className="text-body-lg text-on-surface mb-1 font-bold">Cloud Folders</h4>
+                      <p className="text-body-md text-on-surface-variant mb-6">Backup raw PDFs and original capture files.</p>
+                    </div>
+                    <button
+                      onClick={handleConnectDrive}
+                      className="px-6 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md hover:bg-surface transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">add</span> Connect Drive
+                    </button>
                   </div>
-                  <div>
-                    <h4 className="text-body-lg text-on-surface mb-1 font-bold">Cloud Folders</h4>
-                    <p className="text-body-md text-on-surface-variant mb-6">Backup raw PDFs and original capture files.</p>
-                  </div>
-                  <button
-                    onClick={handleConnectDrive}
-                    className="px-6 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md hover:bg-surface transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">add</span> Connect Drive
-                  </button>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Quick Export */}
+            {/* Right Column: Status & Export */}
             <div className="flex flex-col gap-md">
+              <h3 className="text-headline-md text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">settings_suggest</span>
+                Core status
+              </h3>
+
+              <div className="bg-surface rounded-xl p-md border border-surface-variant shadow-[0_4px_16px_rgba(21,69,57,0.08)] mb-4">
+                <p className="text-body-md text-on-surface-variant mb-4">
+                  Connection status for background processing engines:
+                </p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center border-b border-surface-variant pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary text-[20px]">psychology</span>
+                      <span className="text-label-md text-on-surface">Mistral AI (LLM & OCR)</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-caption font-bold ${statuses.mistral ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                      {statuses.mistral ? 'Active' : 'Error / Offline'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary text-[20px]">hub</span>
+                      <span className="text-label-md text-on-surface">Pinecone Vector DB</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-caption font-bold ${statuses.pinecone ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                      {statuses.pinecone ? 'Active' : 'Error / Offline'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <h3 className="text-headline-md text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">ios_share</span>
                 Quick Export
