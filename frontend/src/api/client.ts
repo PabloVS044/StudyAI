@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -87,6 +87,11 @@ export function generateSummary(payload: SummaryRequest): Promise<SummaryRespons
 
 export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
   return req("/api/summaries/list");
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
+  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
 }
 
 // ── Integrations ──────────────────────────────────────────────────────────────

@@ -72,3 +72,13 @@ export interface AppConfig {
   obsidian: boolean;
   pinecone: boolean;
 }
+
+export interface Flashcard {
+  pregunta: string;
+  respuesta: string;
+}
+
+export interface FlashcardSet {
+  note_id: string;
+  flashcards: Flashcard[];
+}
