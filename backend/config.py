@@ -19,6 +19,7 @@ class Settings:
     GOOGLE_TOKEN_PATH: str = os.environ.get("GOOGLE_TOKEN_PATH", "google_token.json")
     GOOGLE_DRIVE_FOLDER_ID: str = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
     OBSIDIAN_VAULT_PATH: str = os.environ.get("OBSIDIAN_VAULT_PATH", "")
+    OBSIDIAN_VAULT_NAME: str = os.environ.get("OBSIDIAN_VAULT_NAME", "")
 
     # Supabase
     SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
@@ -32,7 +33,6 @@ class Settings:
         "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
     ).split(",")
     UPLOADS_DIR: str = os.environ.get("UPLOADS_DIR", "uploads")
-    DB_PATH: str = os.environ.get("DB_PATH", "studyai.db")
 
     @property
     def notion_enabled(self) -> bool:
