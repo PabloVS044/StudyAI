@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      UPLOADS_DIR: /app/data/uploads
+      GOOGLE_TOKEN_PATH: /app/data/google_token.json   # persiste el token de Drive en el volumen
+      OBSIDIAN_VAULT_PATH: /vault                       # vault montado abajo
+      OBSIDIAN_VAULT_NAME: ${OBSIDIAN_VAULT_NAME:-}     # nombre del vault como aparece en Obsidian
+    volumes:
+      - studyai-data:/app/data
+      # Monta TU carpeta de vault de Obsidian (host -> contenedor). Pon la ruta en /.env como OBSIDIAN_VAULT_HOST.
+      - ${OBSIDIAN_VAULT_HOST:-./obsidian-vault}:/vault
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  studyai-data:
