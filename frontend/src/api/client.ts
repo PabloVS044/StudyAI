@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, FlashcardsResult, NoteDetail, NoteListItem, SearchResultItem, SummaryResult } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -75,39 +75,6 @@ export interface SummaryRequest {
   language?: string;
 }
 
-export interface SummaryResponse {
-  title: string;
-  summary: string;
-  key_concepts: string[];
-  note_ids: string[];
-  style: string;
-}
-
-export interface SummaryNoteItem {
-  note_id: string;
-  title: string;
-  filename: string;
-  date: string;
-  tags: string[];
-}
-
-export function generateSummary(payload: SummaryRequest): Promise<SummaryResponse> {
-  return req("/api/summaries/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-}
-
-export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
-  return req("/api/summaries/list");
-}
-
-// ── Flashcards ────────────────────────────────────────────────────────────────
-export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
-  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
-}
-
 // ── Integrations ──────────────────────────────────────────────────────────────
 export function syncNotion(noteId: string): Promise<{ success: boolean; url: string }> {
   return req(`/api/integrations/notion/${noteId}`, { method: "POST" });
@@ -150,7 +117,7 @@ export async function exportObsidian(noteId: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export function saveObsidianVault(noteId: string): Promise<{ success: boolean; path: string }> {
+export function saveObsidianVault(noteId: string): Promise<{ success: boolean; path: string; obsidian_uri: string }> {
   return req(`/api/integrations/obsidian/${noteId}/save-vault`, { method: "POST" });
 }
 
@@ -171,21 +138,21 @@ export function chatRag(question: string): Promise<{
   });
 }
 
-// ── Study (flashcards & summary) ───────────────────────────────────────────────
-export function generateFlashcards(noteId: string): Promise<FlashcardsResult> {
-  return req(`/api/notes/${noteId}/flashcards`, { method: "POST" });
+// ── Flashcards & Summaries (Supabase stack) ───────────────────────────────────
+export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
+  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
 }
 
-export function getFlashcards(noteId: string): Promise<FlashcardsResult> {
-  return req(`/api/notes/${noteId}/flashcards`);
+export function generateSummary(payload: SummaryRequest): Promise<SummaryResponse> {
+  return req("/api/summaries/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
-export function generateSummary(noteId: string): Promise<SummaryResult> {
-  return req(`/api/notes/${noteId}/summary`, { method: "POST" });
-}
-
-export function getSummary(noteId: string): Promise<SummaryResult> {
-  return req(`/api/notes/${noteId}/summary`);
+export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
+  return req("/api/summaries/list");
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
