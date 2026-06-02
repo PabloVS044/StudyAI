@@ -1,8 +1,9 @@
 """Generate AI flashcards from saved notes."""
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from auth import get_current_user
 from config import settings
-from services import sqlite_client, flashcard_generator
+from services import supabase_client, flashcard_generator
 
 router = APIRouter()
 
@@ -11,15 +12,16 @@ router = APIRouter()
 async def generate_note_flashcards(
     note_id: str,
     count: int = Query(default=10, ge=1, le=30),
+    user_id: str = Depends(get_current_user),
 ):
     if not settings.MISTRAL_API_KEY:
         raise HTTPException(status_code=400, detail="MISTRAL_API_KEY no está configurada.")
 
-    row = sqlite_client.get_note(note_id)
+    row = supabase_client.get_note(note_id, user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Nota no encontrada.")
 
-    content = sqlite_client.note_content(row)
+    content = supabase_client.note_content(row)
 
     try:
         cards = flashcard_generator.generate_flashcards(settings.MISTRAL_API_KEY, content, count)

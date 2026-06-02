@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { UserButton } from "@clerk/react";
 
 export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: string }) {
   const navigate = useNavigate();
@@ -30,13 +31,7 @@ export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: stri
         <button className="text-on-surface-variant hover:bg-primary-container/10 rounded-full p-2 transition-all flex items-center justify-center">
           <span className="material-symbols-outlined">notifications</span>
         </button>
-        <div className="flex items-center gap-xs cursor-pointer hover:bg-primary-container/10 p-1 pr-3 rounded-full transition-all">
-          <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-primary-container text-[18px]">person</span>
-          </div>
-          <span className="text-label-md text-on-surface">Hola, Pablo</span>
-          <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
-        </div>
+        <UserButton />
       </div>
     </header>
   );

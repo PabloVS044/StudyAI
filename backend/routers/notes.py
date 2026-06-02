@@ -1,10 +1,11 @@
 """CRUD + semantic search for saved notes."""
 import json
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
+from auth import get_current_user
 from config import settings
-from services import embeddings, pinecone_client, sqlite_client
+from services import embeddings, pinecone_client, supabase_client
 
 router = APIRouter()
 
@@ -56,7 +57,7 @@ def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
 
 
 def _note_to_item(row: dict) -> dict:
-    c = sqlite_client.note_content(row)
+    c = supabase_client.note_content(row)
     preview = (c.get("texto_principal") or c.get("titulo") or row["filename"])[:300]
     tags = _clean_tags(row.get("tags")) or _clean_tags(c.get("tags"))
     return {
@@ -77,20 +78,20 @@ def _note_to_item(row: dict) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.post("/save")
-async def save_note(req: SaveRequest, bg: BackgroundTasks):
+async def save_note(req: SaveRequest, bg: BackgroundTasks, user_id: str = Depends(get_current_user)):
     content = dict(req.content)
     tags = _clean_tags(content.get("tags"))
     content["tags"] = tags
     title = (content.get("titulo") or req.filename)[:500]
-    sqlite_client.create_note(
+    supabase_client.create_note(
         note_id=req.note_id,
         title=title,
         filename=req.filename,
         image_ext=req.image_ext,
         content_json=json.dumps(content, ensure_ascii=False),
         tags=json.dumps(tags, ensure_ascii=False),
+        user_id=user_id,
     )
-    # Embedding is async — doesn't block the save response
     if settings.PINECONE_API_KEY and settings.MISTRAL_API_KEY:
         bg.add_task(_embed_and_upsert, req.note_id, req.filename, content)
 
@@ -98,24 +99,24 @@ async def save_note(req: SaveRequest, bg: BackgroundTasks):
 
 
 @router.get("")
-async def list_notes(limit: int = 50):
-    rows = sqlite_client.list_notes(limit)
+async def list_notes(limit: int = 50, user_id: str = Depends(get_current_user)):
+    rows = supabase_client.list_notes(limit, user_id)
     return [_note_to_item(r) for r in rows]
 
 
 @router.get("/{note_id}")
-async def get_note(note_id: str):
-    row = sqlite_client.get_note(note_id)
+async def get_note(note_id: str, user_id: str = Depends(get_current_user)):
+    row = supabase_client.get_note(note_id, user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Nota no encontrada")
     item = _note_to_item(row)
-    item["content"] = sqlite_client.note_content(row)
+    item["content"] = supabase_client.note_content(row)
     return item
 
 
 @router.delete("/{note_id}")
-async def delete_note(note_id: str):
-    sqlite_client.delete_note(note_id)
+async def delete_note(note_id: str, user_id: str = Depends(get_current_user)):
+    supabase_client.delete_note(note_id, user_id)
     if settings.PINECONE_API_KEY:
         try:
             pinecone_client.delete_vector(
@@ -127,7 +128,7 @@ async def delete_note(note_id: str):
 
 
 @router.post("/search")
-async def search_notes(req: SearchRequest):
+async def search_notes(req: SearchRequest, user_id: str = Depends(get_current_user)):
     if not (settings.PINECONE_API_KEY and settings.MISTRAL_API_KEY):
         raise HTTPException(status_code=400, detail="Pinecone o Mistral no configurados")
 
@@ -138,7 +139,7 @@ async def search_notes(req: SearchRequest):
 
     results = []
     for m in matches:
-        row = sqlite_client.get_note(m["note_id"])
+        row = supabase_client.get_note(m["note_id"], user_id)
         if not row:
             continue
         item = _note_to_item(row)

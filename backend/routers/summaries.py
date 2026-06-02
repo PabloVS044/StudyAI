@@ -2,11 +2,12 @@
 import json
 import re
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from auth import get_current_user
 from config import settings
-from services import sqlite_client
+from services import supabase_client
 
 try:
     from mistralai import Mistral
@@ -49,7 +50,7 @@ def _clean_tags(value) -> list[str]:
 
 
 def _note_text(row: dict) -> tuple[str, str]:
-    content = sqlite_client.note_content(row)
+    content = supabase_client.note_content(row)
     title = content.get("titulo") or row["title"] or row["filename"]
     parts: list[str] = []
 
@@ -99,7 +100,7 @@ def _parse_json_response(raw: str) -> dict:
 
 
 @router.post("/generate", response_model=SummaryResponse)
-async def generate_summary(req: SummaryRequest):
+async def generate_summary(req: SummaryRequest, user_id: str = Depends(get_current_user)):
     if not settings.MISTRAL_API_KEY:
         raise HTTPException(status_code=500, detail="MISTRAL_API_KEY no configurada")
     if not req.note_ids:
@@ -108,7 +109,7 @@ async def generate_summary(req: SummaryRequest):
     note_sections: list[str] = []
     valid_note_ids: list[str] = []
     for note_id in req.note_ids:
-        row = sqlite_client.get_note(note_id)
+        row = supabase_client.get_note(note_id, user_id)
         if not row:
             continue
         title, text = _note_text(row)
@@ -160,8 +161,8 @@ Responde UNICAMENTE con el JSON, sin markdown ni texto extra."""
 
 
 @router.get("/list")
-async def list_summary_notes():
-    rows = sqlite_client.list_notes(100)
+async def list_summary_notes(user_id: str = Depends(get_current_user)):
+    rows = supabase_client.list_notes(100, user_id)
     return [
         {
             "note_id": row["note_id"],
@@ -169,7 +170,7 @@ async def list_summary_notes():
             "filename": row["filename"],
             "date": row.get("created_at", ""),
             "tags": _clean_tags(row.get("tags"))
-            or _clean_tags(sqlite_client.note_content(row).get("tags")),
+            or _clean_tags(supabase_client.note_content(row).get("tags")),
         }
         for row in rows
     ]

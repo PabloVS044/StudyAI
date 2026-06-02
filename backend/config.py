@@ -20,6 +20,13 @@ class Settings:
     GOOGLE_DRIVE_FOLDER_ID: str = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
     OBSIDIAN_VAULT_PATH: str = os.environ.get("OBSIDIAN_VAULT_PATH", "")
 
+    # Supabase
+    SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
+    SUPABASE_SERVICE_KEY: str = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+    # Clerk
+    CLERK_JWKS_URL: str = os.environ.get("CLERK_JWKS_URL", "")
+
     # Server
     CORS_ORIGINS: list[str] = os.environ.get(
         "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
