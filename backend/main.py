@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from config import settings
 from services import sqlite_client
-from routers import extract, notes, integrations, config_router, chat
+from routers import extract, notes, integrations, config_router, chat, study
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="StudyAI API", version="2.0.0", docs_url="/api/docs")
@@ -25,6 +25,7 @@ app.include_router(notes.router,         prefix="/api/notes",         tags=["not
 app.include_router(integrations.router,  prefix="/api/integrations",  tags=["integrations"])
 app.include_router(config_router.router, prefix="/api/config",        tags=["config"])
 app.include_router(chat.router,          prefix="/api/chat",          tags=["chat"])
+app.include_router(study.router,         prefix="/api/notes",         tags=["study"])
 
 
 # ── Serve uploaded images ─────────────────────────────────────────────────────

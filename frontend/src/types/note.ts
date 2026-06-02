@@ -64,6 +64,24 @@ export interface SearchResultItem extends NoteListItem {
   score: number;
 }
 
+export interface Flashcard {
+  id: number;
+  pregunta: string;
+  respuesta: string;
+}
+
+/** Returned by GET/POST /api/notes/:id/flashcards. */
+export interface FlashcardsResult {
+  note_id: string;
+  flashcards: Flashcard[];
+}
+
+/** Returned by GET/POST /api/notes/:id/summary. */
+export interface SummaryResult {
+  note_id: string;
+  summary_md: string | null;
+}
+
 export interface AppConfig {
   notion: boolean;
   drive: boolean;

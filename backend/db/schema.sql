@@ -12,3 +12,19 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notes_created ON notes(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS flashcards (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    note_id     TEXT NOT NULL,
+    pregunta    TEXT NOT NULL,
+    respuesta   TEXT NOT NULL,
+    created_at  TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_flashcards_note ON flashcards(note_id);
+
+CREATE TABLE IF NOT EXISTS summaries (
+    note_id     TEXT PRIMARY KEY,
+    summary_md  TEXT NOT NULL,
+    created_at  TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);

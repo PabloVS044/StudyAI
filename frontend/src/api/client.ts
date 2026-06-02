@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardsResult, NoteDetail, NoteListItem, SearchResultItem, SummaryResult } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -110,6 +110,23 @@ export function chatRag(question: string): Promise<{
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question }),
   });
+}
+
+// ── Study (flashcards & summary) ───────────────────────────────────────────────
+export function generateFlashcards(noteId: string): Promise<FlashcardsResult> {
+  return req(`/api/notes/${noteId}/flashcards`, { method: "POST" });
+}
+
+export function getFlashcards(noteId: string): Promise<FlashcardsResult> {
+  return req(`/api/notes/${noteId}/flashcards`);
+}
+
+export function generateSummary(noteId: string): Promise<SummaryResult> {
+  return req(`/api/notes/${noteId}/summary`, { method: "POST" });
+}
+
+export function getSummary(noteId: string): Promise<SummaryResult> {
+  return req(`/api/notes/${noteId}/summary`);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

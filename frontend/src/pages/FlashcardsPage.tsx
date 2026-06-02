@@ -1,214 +1,315 @@
+import { useEffect, useState } from "react";
 import TopBar from "../components/TopBar";
+import { listNotes, generateFlashcards, getFlashcards } from "../api/client";
+import type { NoteListItem, Flashcard } from "../types/note";
 
-const deckProgress = {
-  current: 12,
-  total: 45,
-  mastered: 19,
-  inReview: 7,
-  difficult: 4,
-  overall: 42,
-};
-
-const upcomingDecks = [
-  {
-    title: "Genetics & Inheritance",
-    course: "Biology 101",
-    progress: 85,
-    info: "12 cards to review today",
-    icon: "style",
-  },
-  {
-    title: "Intro to Psychology",
-    course: "Psych 200",
-    progress: 15,
-    info: "50+ new cards",
-    icon: "style",
-  },
-  {
-    title: "Statistical Methods",
-    course: "Stats 301",
-    progress: 0,
-    info: "Starts next week",
-    icon: "lock",
-    locked: true,
-  },
-];
-
-const currentCard = {
-  question: "Describe the primary function of the electron transport chain (ETC) in aerobic respiration and identify its location.",
-  answer: "The ETC creates a proton gradient across the inner mitochondrial membrane to drive ATP synthesis via ATP synthase.",
-  details: [
-    { label: "Location:", value: "Inner mitochondrial membrane." },
-    { label: "Inputs:", value: "NADH, FADH2, O2." },
-    { label: "Outputs:", value: "~34 ATP, H2O." },
-  ],
-};
+type Phase = "idle" | "loading" | "ready" | "error";
 
 export default function FlashcardsPage() {
-  const progressPercent = (deckProgress.current / deckProgress.total) * 100;
+  const [notes, setNotes] = useState<NoteListItem[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState("");
+
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [errMsg, setErrMsg] = useState("");
+
+  // current card index & flip state
+  const [cardIndex, setCardIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  useEffect(() => {
+    listNotes()
+      .then(setNotes)
+      .catch(() => {})
+      .finally(() => setNotesLoading(false));
+  }, []);
+
+  async function handleGet() {
+    if (!selectedId) return;
+    setPhase("loading");
+    setFlipped(false);
+    setCardIndex(0);
+    setErrMsg("");
+    try {
+      const result = await getFlashcards(selectedId);
+      setFlashcards(result.flashcards);
+      setPhase("ready");
+    } catch {
+      setFlashcards([]);
+      setPhase("error");
+      setErrMsg("No hay flashcards guardadas para esta nota.");
+    }
+  }
+
+  async function handleGenerate() {
+    if (!selectedId) return;
+    setPhase("loading");
+    setFlipped(false);
+    setCardIndex(0);
+    setErrMsg("");
+    try {
+      const result = await generateFlashcards(selectedId);
+      setFlashcards(result.flashcards);
+      setPhase("ready");
+    } catch (e) {
+      setFlashcards([]);
+      setPhase("error");
+      setErrMsg(e instanceof Error ? e.message : "Error al generar flashcards.");
+    }
+  }
+
+  const total = flashcards.length;
+  const progressPercent = total > 0 ? ((cardIndex + 1) / total) * 100 : 0;
+  const current = flashcards[cardIndex] ?? null;
+
+  function prev() {
+    setFlipped(false);
+    setCardIndex((i) => Math.max(0, i - 1));
+  }
+  function next() {
+    setFlipped(false);
+    setCardIndex((i) => Math.min(total - 1, i + 1));
+  }
 
   return (
     <>
       <TopBar searchPlaceholder="Search decks, tags, or concepts..." />
       <main className="flex-1 mt-16 p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64">
-        {/* Breadcrumb & Deck Header */}
-        <div className="mb-md flex justify-between items-end">
+
+        {/* Header & note selector */}
+        <div className="mb-md flex flex-col sm:flex-row sm:justify-between sm:items-end gap-md">
           <div>
-            <div className="flex items-center gap-xs text-caption text-outline mb-xs">
-              <span>Courses</span>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span>Biology 101</span>
-            </div>
             <h2 className="text-headline-lg text-on-background flex items-center gap-sm">
-              Cellular Respiration
+              Flashcards
               <span className="bg-primary-container/10 text-primary text-caption px-sm py-xs rounded-full inline-flex items-center gap-xs">
-                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                High Priority
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>style</span>
+                Estudio activo
               </span>
             </h2>
+            <p className="text-caption text-outline mt-xs">Selecciona una nota y genera o carga tus flashcards.</p>
           </div>
-          <div className="text-right">
-            <p className="text-caption text-outline mb-xs">Deck Progress</p>
-            <p className="text-label-md text-on-surface-variant">Card {deckProgress.current} of {deckProgress.total}</p>
-          </div>
+          {phase === "ready" && total > 0 && (
+            <div className="text-right">
+              <p className="text-caption text-outline mb-xs">Progreso</p>
+              <p className="text-label-md text-on-surface-variant">Tarjeta {cardIndex + 1} de {total}</p>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
-          {/* Main Stage: Active Card (8 cols) */}
-          <div className="lg:col-span-8 flex flex-col">
-            <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-[0_4px_24px_-4px_rgba(21,69,57,0.05)] flex-1 min-h-[500px] flex flex-col relative overflow-hidden transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-4px_rgba(21,69,57,0.08)]">
-              {/* Top Progress Bar */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-surface-container-high">
-                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progressPercent}%` }} />
-              </div>
-
-              {/* Card Content */}
-              <div className="p-xl flex-1 flex flex-col justify-center items-center text-center">
-                <div className="mb-lg w-full">
-                  <span className="text-caption text-outline tracking-wider uppercase mb-md block">Question</span>
-                  <h3 className="text-headline-md text-on-surface max-w-2xl mx-auto leading-snug">
-                    {currentCard.question}
-                  </h3>
-                </div>
-
-                {/* Divider */}
-                <div className="w-full h-px bg-outline-variant/30 my-lg relative">
-                  <div className="absolute left-1/2 -translate-x-1/2 -top-3 bg-surface px-sm text-caption text-outline">Answer Revealed</div>
-                </div>
-
-                {/* Answer */}
-                <div className="w-full max-w-2xl mx-auto bg-surface-container-low p-md rounded-lg border border-outline-variant/10 text-left">
-                  <p className="text-body-lg text-on-surface-variant mb-sm">
-                    {currentCard.answer}
-                  </p>
-                  <ul className="list-disc list-inside text-body-md text-on-surface-variant/80 space-y-xs ml-sm">
-                    {currentCard.details.map((d, i) => (
-                      <li key={i}>
-                        <strong className="text-on-surface">{d.label}</strong> {d.value}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Interaction Buttons */}
-              <div className="bg-surface-container-lowest border-t border-outline-variant/20 p-md flex justify-center gap-md">
-                <button className="flex flex-col items-center justify-center gap-xs w-32 py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-error hover:bg-error-container hover:text-on-error-container hover:border-error-container transition-colors group">
-                  <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">close</span>
-                  <span className="text-caption">I don't know it</span>
-                  <span className="text-[10px] text-outline opacity-70">&lt; 1 min</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-xs w-32 py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-secondary hover:bg-secondary-container hover:text-on-secondary-container hover:border-secondary-container transition-colors group">
-                  <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">schedule</span>
-                  <span className="text-caption">Review later</span>
-                  <span className="text-[10px] text-outline opacity-70">10 mins</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-xs w-32 py-sm rounded-lg bg-primary text-on-primary shadow-sm hover:opacity-90 hover:-translate-y-px transition-all group">
-                  <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">check</span>
-                  <span className="text-caption">I know it</span>
-                  <span className="text-[10px] text-primary-fixed-dim opacity-80">4 days</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-md text-center">
-              <button className="text-label-md text-outline hover:text-primary flex items-center gap-xs mx-auto transition-colors">
-                <span className="material-symbols-outlined text-[18px]">edit</span>
-                Edit Card
-              </button>
-            </div>
-          </div>
-
-          {/* Right Side: Stats & Navigation (4 cols) */}
-          <div className="lg:col-span-4 flex flex-col gap-gutter">
-            {/* Session Stats Bento */}
-            <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
-              <h3 className="text-label-md text-on-surface mb-md flex items-center gap-sm">
-                <span className="material-symbols-outlined text-secondary">monitoring</span>
-                Current Deck Mastery
-              </h3>
-
-              <div className="mb-lg">
-                <div className="flex justify-between text-caption text-outline mb-xs">
-                  <span>Overall Progress</span>
-                  <span className="text-primary font-bold">{deckProgress.overall}%</span>
-                </div>
-                <div className="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden flex">
-                  <div className="bg-primary h-full" style={{ width: `${deckProgress.overall}%` }} />
-                  <div className="bg-secondary-fixed-dim h-full" style={{ width: `${(deckProgress.inReview / deckProgress.total) * 100}%` }} />
-                  <div className="bg-error-container h-full" style={{ width: `${(deckProgress.difficult / deckProgress.total) * 100}%` }} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-sm">
-                <div className="bg-primary-container/5 rounded-lg p-sm text-center border border-primary-container/10">
-                  <span className="block text-headline-md text-primary">{deckProgress.mastered}</span>
-                  <span className="text-caption text-outline">Mastered</span>
-                </div>
-                <div className="bg-surface-container rounded-lg p-sm text-center border border-outline-variant/20">
-                  <span className="block text-headline-md text-secondary">{deckProgress.inReview}</span>
-                  <span className="text-caption text-outline">In Review</span>
-                </div>
-                <div className="bg-error-container/20 rounded-lg p-sm text-center border border-error-container/30">
-                  <span className="block text-headline-md text-error">{deckProgress.difficult}</span>
-                  <span className="text-caption text-outline">Difficult</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Other Decks List */}
-            <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm flex-1 p-md flex flex-col">
-              <div className="flex justify-between items-center mb-md">
-                <h3 className="text-label-md text-on-surface">Up Next</h3>
-                <button className="text-caption text-primary hover:underline">View All</button>
-              </div>
-              <div className="flex-1 space-y-sm overflow-y-auto pr-sm custom-scrollbar">
-                {upcomingDecks.map((deck, i) => (
-                  <a
-                    key={i}
-                    href="#"
-                    className={`block p-sm rounded-lg border border-outline-variant/20 hover:bg-surface-container-low hover:border-outline-variant/50 transition-all group ${deck.locked ? "opacity-70" : ""}`}
-                  >
-                    <div className="flex justify-between items-start mb-xs">
-                      <h4 className="text-label-md text-on-surface group-hover:text-primary transition-colors">{deck.title}</h4>
-                      <span className="bg-surface-container-highest text-on-surface-variant text-[10px] px-2 py-0.5 rounded-full">{deck.course}</span>
-                    </div>
-                    <div className="flex items-center gap-sm">
-                      <div className="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden">
-                        <div className={`h-full ${deck.progress === 0 ? "bg-outline" : deck.progress < 50 ? "bg-secondary" : "bg-primary"}`} style={{ width: `${deck.progress}%` }} />
-                      </div>
-                      <span className="text-caption text-outline">{deck.progress}%</span>
-                    </div>
-                    <div className="mt-xs text-[10px] text-outline flex items-center gap-xs">
-                      <span className="material-symbols-outlined text-[12px]">{deck.icon}</span>
-                      {deck.info}
-                    </div>
-                  </a>
+        {/* Note selector panel */}
+        <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md mb-gutter flex flex-col sm:flex-row gap-md items-end">
+          <div className="flex-1">
+            <label className="block text-label-md text-on-surface mb-xs">Nota</label>
+            {notesLoading ? (
+              <div className="h-10 bg-surface-container-low rounded-lg animate-pulse" />
+            ) : (
+              <select
+                value={selectedId}
+                onChange={(e) => { setSelectedId(e.target.value); setPhase("idle"); setFlashcards([]); }}
+                className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+              >
+                <option value="">-- Elige una nota --</option>
+                {notes.map((n) => (
+                  <option key={n.note_id} value={n.note_id}>{n.title || n.filename}</option>
                 ))}
+              </select>
+            )}
+          </div>
+          <div className="flex gap-sm">
+            <button
+              onClick={handleGet}
+              disabled={!selectedId || phase === "loading"}
+              className="px-md py-sm rounded-lg border border-outline-variant/30 text-label-md text-on-surface-variant bg-surface-container hover:bg-surface-container-high disabled:opacity-40 transition-colors"
+            >
+              Cargar existentes
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={!selectedId || phase === "loading"}
+              className="px-md py-sm rounded-lg bg-primary text-on-primary text-label-md shadow-sm hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-xs"
+            >
+              {phase === "loading" ? (
+                <>
+                  <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  Generar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* States */}
+        {phase === "idle" && (
+          <div className="flex flex-col items-center justify-center py-2xl text-center text-outline">
+            <span className="material-symbols-outlined text-[48px] mb-md opacity-30">style</span>
+            <p className="text-body-lg">Selecciona una nota y pulsa "Generar" o "Cargar existentes".</p>
+          </div>
+        )}
+
+        {phase === "error" && (
+          <div className="bg-error-container/20 border border-error-container/40 rounded-xl p-md text-center text-on-error-container">
+            <span className="material-symbols-outlined text-[32px] mb-sm block">error</span>
+            <p className="text-body-md">{errMsg}</p>
+            <button onClick={handleGenerate} className="mt-md px-md py-sm rounded-lg bg-primary text-on-primary text-label-md hover:opacity-90 transition-all inline-flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+              Generar de todas formas
+            </button>
+          </div>
+        )}
+
+        {phase === "ready" && total === 0 && (
+          <div className="flex flex-col items-center justify-center py-2xl text-center text-outline">
+            <span className="material-symbols-outlined text-[48px] mb-md opacity-30">inbox</span>
+            <p className="text-body-lg">No se generaron flashcards para esta nota.</p>
+          </div>
+        )}
+
+        {phase === "ready" && total > 0 && current && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+            {/* Main Stage: Active Card (8 cols) */}
+            <div className="lg:col-span-8 flex flex-col">
+              <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-[0_4px_24px_-4px_rgba(21,69,57,0.05)] flex-1 min-h-[500px] flex flex-col relative overflow-hidden transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-4px_rgba(21,69,57,0.08)]">
+                {/* Top Progress Bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-surface-container-high">
+                  <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+                </div>
+
+                {/* Card Content */}
+                <div
+                  className="p-xl flex-1 flex flex-col justify-center items-center text-center cursor-pointer select-none"
+                  onClick={() => setFlipped((f) => !f)}
+                >
+                  {!flipped ? (
+                    <div className="mb-lg w-full">
+                      <span className="text-caption text-outline tracking-wider uppercase mb-md block">Pregunta</span>
+                      <h3 className="text-headline-md text-on-surface max-w-2xl mx-auto leading-snug">
+                        {current.pregunta}
+                      </h3>
+                      <p className="text-caption text-outline mt-lg opacity-60">Toca para ver la respuesta</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-lg w-full">
+                        <span className="text-caption text-outline tracking-wider uppercase mb-md block">Pregunta</span>
+                        <p className="text-body-md text-on-surface-variant max-w-2xl mx-auto">{current.pregunta}</p>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="w-full h-px bg-outline-variant/30 my-lg relative">
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-3 bg-surface px-sm text-caption text-outline">Respuesta</div>
+                      </div>
+
+                      {/* Answer */}
+                      <div className="w-full max-w-2xl mx-auto bg-surface-container-low p-md rounded-lg border border-outline-variant/10 text-left">
+                        <p className="text-body-lg text-on-surface-variant">{current.respuesta}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Navigation */}
+                <div className="bg-surface-container-lowest border-t border-outline-variant/20 p-md flex justify-between items-center gap-md">
+                  <button
+                    onClick={prev}
+                    disabled={cardIndex === 0}
+                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                    Anterior
+                  </button>
+
+                  <button
+                    onClick={() => setFlipped((f) => !f)}
+                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high transition-colors text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">flip</span>
+                    {flipped ? "Ver pregunta" : "Ver respuesta"}
+                  </button>
+
+                  <button
+                    onClick={next}
+                    disabled={cardIndex === total - 1}
+                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary shadow-sm hover:opacity-90 disabled:opacity-30 transition-all text-label-md"
+                  >
+                    Siguiente
+                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-md text-center">
+                <button
+                  onClick={handleGenerate}
+                  className="text-label-md text-outline hover:text-primary flex items-center gap-xs mx-auto transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  Regenerar flashcards
+                </button>
+              </div>
+            </div>
+
+            {/* Right Side: Card list (4 cols) */}
+            <div className="lg:col-span-4 flex flex-col gap-gutter">
+              {/* Stats bento */}
+              <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
+                <h3 className="text-label-md text-on-surface mb-md flex items-center gap-sm">
+                  <span className="material-symbols-outlined text-secondary">monitoring</span>
+                  Sesion actual
+                </h3>
+                <div className="mb-lg">
+                  <div className="flex justify-between text-caption text-outline mb-xs">
+                    <span>Progreso</span>
+                    <span className="text-primary font-bold">{Math.round(progressPercent)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+                    <div className="bg-primary h-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-sm">
+                  <div className="bg-primary-container/5 rounded-lg p-sm text-center border border-primary-container/10">
+                    <span className="block text-headline-md text-primary">{cardIndex + 1}</span>
+                    <span className="text-caption text-outline">Actual</span>
+                  </div>
+                  <div className="bg-surface-container rounded-lg p-sm text-center border border-outline-variant/20">
+                    <span className="block text-headline-md text-secondary">{total}</span>
+                    <span className="text-caption text-outline">Total</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card list */}
+              <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm flex-1 p-md flex flex-col">
+                <h3 className="text-label-md text-on-surface mb-md">Todas las tarjetas</h3>
+                <div className="flex-1 space-y-xs overflow-y-auto pr-sm custom-scrollbar max-h-[340px]">
+                  {flashcards.map((fc, i) => (
+                    <button
+                      key={fc.id}
+                      onClick={() => { setCardIndex(i); setFlipped(false); }}
+                      className={`w-full text-left block p-sm rounded-lg border transition-all group ${
+                        i === cardIndex
+                          ? "border-primary bg-primary-container/10 text-primary"
+                          : "border-outline-variant/20 hover:bg-surface-container-low hover:border-outline-variant/50 text-on-surface"
+                      }`}
+                    >
+                      <div className="flex items-center gap-sm">
+                        <span className={`text-caption font-bold w-5 shrink-0 ${i === cardIndex ? "text-primary" : "text-outline"}`}>
+                          {i + 1}
+                        </span>
+                        <p className="text-caption line-clamp-2 flex-1">{fc.pregunta}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </>
   );

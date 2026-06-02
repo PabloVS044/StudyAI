@@ -78,6 +78,40 @@ def delete_note(note_id: str) -> None:
         conn.execute("DELETE FROM notes WHERE note_id = ?", (note_id,))
 
 
+def replace_flashcards(note_id: str, cards: list[dict]) -> None:
+    with get_conn() as conn:
+        conn.execute("DELETE FROM flashcards WHERE note_id = ?", (note_id,))
+        conn.executemany(
+            "INSERT INTO flashcards (note_id, pregunta, respuesta) VALUES (?, ?, ?)",
+            [(note_id, c["pregunta"], c["respuesta"]) for c in cards],
+        )
+
+
+def list_flashcards(note_id: str) -> list[dict]:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, pregunta, respuesta FROM flashcards WHERE note_id = ? ORDER BY id",
+            (note_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def upsert_summary(note_id: str, summary_md: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO summaries (note_id, summary_md) VALUES (?, ?)",
+            (note_id, summary_md),
+        )
+
+
+def get_summary(note_id: str) -> Optional[str]:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT summary_md FROM summaries WHERE note_id = ?", (note_id,)
+        ).fetchone()
+        return row["summary_md"] if row else None
+
+
 def note_content(note: dict) -> dict:
     """Parse the content_json field back to a dict."""
     try:
