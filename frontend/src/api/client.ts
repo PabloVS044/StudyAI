@@ -3,8 +3,22 @@ import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, 
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
+type TokenProvider = () => Promise<string | null>;
+let _tokenProvider: TokenProvider | null = null;
+
+export function setTokenProvider(fn: TokenProvider) {
+  _tokenProvider = fn;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, init);
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     let msg = res.statusText;
     try { msg = (await res.json()).detail ?? msg; } catch { /* ignore */ }
@@ -117,7 +131,12 @@ export function validateIntegrations(): Promise<{
 }
 
 export async function exportObsidian(noteId: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
+  const headers: Record<string, string> = {};
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`, { headers });
   if (!res.ok) throw new Error("Error al exportar");
   const blob = await res.blob();
   const disp = res.headers.get("Content-Disposition") ?? "";

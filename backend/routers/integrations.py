@@ -1,16 +1,17 @@
 """Integration endpoints: Notion, Google Drive, Obsidian."""
 import re
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
+from auth import get_current_user
 from config import settings
-from services import sqlite_client, notion_service, obsidian_service, drive_service
+from services import supabase_client, notion_service, obsidian_service, drive_service
 
 router = APIRouter()
 
 
-def _require_note(note_id: str) -> dict:
-    row = sqlite_client.get_note(note_id)
+def _require_note(note_id: str, user_id: str) -> dict:
+    row = supabase_client.get_note(note_id, user_id)
     if not row:
         raise HTTPException(status_code=404, detail="Nota no encontrada")
     return row
@@ -19,13 +20,13 @@ def _require_note(note_id: str) -> dict:
 # ── Notion ────────────────────────────────────────────────────────────────────
 
 @router.post("/notion/{note_id}")
-async def sync_notion(note_id: str):
+async def sync_notion(note_id: str, user_id: str = Depends(get_current_user)):
     if not settings.notion_enabled:
         raise HTTPException(status_code=400,
                             detail="Notion no configurado (faltan NOTION_TOKEN y/o NOTION_DATABASE_ID)")
 
-    row = _require_note(note_id)
-    content = sqlite_client.note_content(row)
+    row = _require_note(note_id, user_id)
+    content = supabase_client.note_content(row)
 
     try:
         url = notion_service.create_note_page(
@@ -39,7 +40,7 @@ async def sync_notion(note_id: str):
         raise HTTPException(status_code=500, detail=f"Error de Notion: {exc}")
 
     if url:
-        sqlite_client.update_note(note_id, notion_url=url)
+        supabase_client.update_note(note_id, user_id, notion_url=url)
 
     return {"success": True, "url": url}
 
@@ -113,7 +114,7 @@ async def google_callback(code: str):
 
 
 @router.post("/drive/{note_id}")
-async def sync_drive(note_id: str):
+async def sync_drive(note_id: str, user_id: str = Depends(get_current_user)):
     if not settings.drive_enabled:
         raise HTTPException(status_code=400,
                             detail="Google Drive no configurado (faltan GOOGLE_CLIENT_ID y/o GOOGLE_CLIENT_SECRET)")
@@ -122,7 +123,7 @@ async def sync_drive(note_id: str):
         raise HTTPException(status_code=400,
                             detail="Google Drive no autenticado. Por favor, conecta tu cuenta de Google.")
 
-    row = _require_note(note_id)
+    row = _require_note(note_id, user_id)
 
     try:
         result = drive_service.upload_note_image(
@@ -140,16 +141,16 @@ async def sync_drive(note_id: str):
                             detail="Imagen del apunte no encontrada en uploads/")
 
     file_id, url = result
-    sqlite_client.update_note(note_id, drive_file_id=file_id, drive_url=url)
+    supabase_client.update_note(note_id, user_id, drive_file_id=file_id, drive_url=url)
     return {"success": True, "file_id": file_id, "url": url}
 
 
 # ── Obsidian — download .md ───────────────────────────────────────────────────
 
 @router.get("/obsidian/{note_id}/export")
-async def export_obsidian(note_id: str):
-    row = _require_note(note_id)
-    content = sqlite_client.note_content(row)
+async def export_obsidian(note_id: str, user_id: str = Depends(get_current_user)):
+    row = _require_note(note_id, user_id)
+    content = supabase_client.note_content(row)
     md = obsidian_service.to_markdown(
         note_id=note_id,
         filename=row["filename"],
@@ -160,7 +161,6 @@ async def export_obsidian(note_id: str):
     )
     import unicodedata
     title = content.get("titulo") or row["filename"]
-    # Normalizar caracteres unicode para remover acentos (ej. Física -> Fisica)
     normalized = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
     safe = re.sub(r'[^\w\s\-]', '', normalized).strip().replace(' ', '_') or "nota"
     return Response(
@@ -173,13 +173,13 @@ async def export_obsidian(note_id: str):
 # ── Obsidian — save to vault ──────────────────────────────────────────────────
 
 @router.post("/obsidian/{note_id}/save-vault")
-async def save_obsidian_vault(note_id: str):
+async def save_obsidian_vault(note_id: str, user_id: str = Depends(get_current_user)):
     if not settings.obsidian_enabled:
         raise HTTPException(status_code=400,
                             detail="Obsidian vault no configurado (falta OBSIDIAN_VAULT_PATH)")
 
-    row = _require_note(note_id)
-    content = sqlite_client.note_content(row)
+    row = _require_note(note_id, user_id)
+    content = supabase_client.note_content(row)
 
     try:
         path = obsidian_service.save_to_vault(
@@ -194,7 +194,7 @@ async def save_obsidian_vault(note_id: str):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error al guardar en vault: {exc}")
 
-    sqlite_client.update_note(note_id, obsidian_path=path)
+    supabase_client.update_note(note_id, user_id, obsidian_path=path)
     return {"success": True, "path": path}
 
 
@@ -204,7 +204,6 @@ async def save_obsidian_vault(note_id: str):
 async def validate_integrations():
     import os
 
-    # 1. Mistral API Key validation
     mistral_valid = False
     if settings.MISTRAL_API_KEY:
         try:
@@ -218,7 +217,6 @@ async def validate_integrations():
         except Exception:
             pass
 
-    # 2. Pinecone validation
     pinecone_valid = False
     if settings.PINECONE_API_KEY:
         try:
@@ -230,7 +228,6 @@ async def validate_integrations():
         except Exception:
             pass
 
-    # 3. Notion validation
     notion_valid = False
     if settings.NOTION_TOKEN:
         try:
@@ -241,7 +238,6 @@ async def validate_integrations():
         except Exception:
             pass
 
-    # 4. Google OAuth validation
     drive_valid = False
     if settings.drive_enabled and settings.drive_authenticated:
         try:

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/react": "^6.7.2",
     "gsap": "^3.15.0",
     "katex": "^0.16.9",
     "lucide-react": "^0.408.0",

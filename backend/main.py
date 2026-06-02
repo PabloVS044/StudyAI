@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from config import settings
-from services import sqlite_client
 from routers import extract, notes, integrations, config_router, summaries
 from routers import extract, notes, integrations, config_router, chat
 from routers import flashcards
@@ -58,4 +57,3 @@ async def health():
 @app.on_event("startup")
 async def startup():
     Path(settings.UPLOADS_DIR).mkdir(exist_ok=True)
-    sqlite_client.init_db(settings.DB_PATH)
