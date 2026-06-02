@@ -167,8 +167,8 @@ export default function LandingPage() {
         </ul>
 
         <div className="l-nav-actions">
-          <button className="l-btn-ghost" onClick={() => navigate('/dashboard')}>{t.navLogin}</button>
-          <button className="l-btn-accent" onClick={() => navigate('/dashboard')}>{t.navStart}</button>
+          <button className="l-btn-ghost" onClick={() => navigate('/sign-in')}>{t.navLogin}</button>
+          <button className="l-btn-accent" onClick={() => navigate('/sign-up')}>{t.navStart}</button>
           <button className="l-icon-btn" onClick={() => setLang(l => l === 'en' ? 'es' : 'en')}>
             {lang === 'en' ? 'ES' : 'EN'}
           </button>
@@ -190,7 +190,7 @@ export default function LandingPage() {
           <h1>{t.h1a}<br />{t.h1b}</h1>
           <p>{t.sub}</p>
           <div className="l-hero-btns">
-            <button className="l-btn-primary" onClick={() => navigate('/dashboard')}>{t.cta1}</button>
+            <button className="l-btn-primary" onClick={() => navigate('/sign-up')}>{t.cta1}</button>
             <a href="#about" className="l-btn-ghost-hero">{t.cta2}</a>
           </div>
         </div>
@@ -417,7 +417,7 @@ export default function LandingPage() {
         <h2 data-reveal>{t.ctaH.split('\n').map((line, i) => i === 0 ? line : <><br key={i}/>{line}</>)}</h2>
         <p data-reveal>{t.ctaP}</p>
         <div className="l-cta-row" data-reveal>
-          <button className="l-cta-primary" onClick={() => navigate('/dashboard')}>{t.ctaB1}</button>
+          <button className="l-cta-primary" onClick={() => navigate('/sign-up')}>{t.ctaB1}</button>
           <button className="l-btn-outline">{t.ctaB2}</button>
         </div>
       </section>

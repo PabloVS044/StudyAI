@@ -129,29 +129,6 @@ export default function LibraryPage() {
           </div>
         )}
       </main>
-
-      <Modal
-        open={!!selectedNote}
-        onClose={() => setSelectedNote(null)}
-        title={selectedNote?.title}
-        wide
-      >
-        {loadingDetail ? (
-          <div className="flex justify-center py-10"><Spinner size={28} /></div>
-        ) : detailError ? (
-          <p className="text-red-400 text-sm">{detailError}</p>
-        ) : detail ? (
-          <NoteDetailView
-            noteId={detail.note_id}
-            filename={detail.filename}
-            imageExt={detail.image_ext}
-            content={detail.content}
-            saved
-            notionUrl={detail.notion_url}
-            driveUrl={detail.drive_url}
-          />
-        ) : null}
-      </Modal>
     </>
   );
 }

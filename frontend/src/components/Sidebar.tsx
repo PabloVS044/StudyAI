@@ -7,7 +7,6 @@ const navItems = [
   { to: "/search", label: "Search", icon: "search" },
   { to: "/ai-summaries", label: "AI Summaries", icon: "psychology" },
   { to: "/flashcards", label: "Flashcards", icon: "quiz" },
-  { to: "/concept-maps", label: "Concept Maps", icon: "hub" },
   { to: "/integrations", label: "Integrations", icon: "extension" },
   { to: "/ai-assistant", label: "AI Assistant", icon: "chat" },
 ];
@@ -66,16 +65,6 @@ export default function Sidebar() {
         </ul>
       </div>
 
-      {/* Settings */}
-      <div className="mt-auto pt-sm border-t border-outline-variant/30">
-        <button
-          onClick={() => navigate("/settings")}
-          className="w-full flex items-center gap-sm px-md py-sm rounded-lg transition-colors duration-200 text-on-secondary-fixed-variant hover:text-primary hover:bg-primary-container/5"
-        >
-          <span className="material-symbols-outlined text-[20px]">settings</span>
-          <span className="text-label-md">Settings</span>
-        </button>
-      </div>
     </nav>
   );
 }

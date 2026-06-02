@@ -6,7 +6,6 @@ const exportFormats = [
   { icon: "article", title: "Full Document", formats: "PDF, DOCX" },
   { icon: "short_text", title: "AI Summary", formats: "Markdown, TXT" },
   { icon: "style", title: "Flashcards", formats: "Anki, CSV" },
-  { icon: "hub", title: "Concept Map", formats: "Image, JSON" },
 ];
 
 export default function IntegrationsPage() {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import TopBar from "../components/TopBar";
-import { listNotes, generateFlashcards, getFlashcards } from "../api/client";
+import { listNotes, generateFlashcards } from "../api/client";
 import type { NoteListItem, Flashcard } from "../types/note";
 
 type Phase = "idle" | "loading" | "ready" | "error";
@@ -24,23 +24,6 @@ export default function FlashcardsPage() {
       .catch(() => {})
       .finally(() => setNotesLoading(false));
   }, []);
-
-  async function handleGet() {
-    if (!selectedId) return;
-    setPhase("loading");
-    setFlipped(false);
-    setCardIndex(0);
-    setErrMsg("");
-    try {
-      const result = await getFlashcards(selectedId);
-      setFlashcards(result.flashcards);
-      setPhase("ready");
-    } catch {
-      setFlashcards([]);
-      setPhase("error");
-      setErrMsg("No hay flashcards guardadas para esta nota.");
-    }
-  }
 
   async function handleGenerate() {
     if (!selectedId) return;
@@ -87,7 +70,7 @@ export default function FlashcardsPage() {
                 Estudio activo
               </span>
             </h2>
-            <p className="text-caption text-outline mt-xs">Selecciona una nota y genera o carga tus flashcards.</p>
+            <p className="text-caption text-outline mt-xs">Selecciona una nota y genera tus flashcards.</p>
           </div>
           {phase === "ready" && total > 0 && (
             <div className="text-right">
@@ -118,13 +101,6 @@ export default function FlashcardsPage() {
           </div>
           <div className="flex gap-sm">
             <button
-              onClick={handleGet}
-              disabled={!selectedId || phase === "loading"}
-              className="px-md py-sm rounded-lg border border-outline-variant/30 text-label-md text-on-surface-variant bg-surface-container hover:bg-surface-container-high disabled:opacity-40 transition-colors"
-            >
-              Cargar existentes
-            </button>
-            <button
               onClick={handleGenerate}
               disabled={!selectedId || phase === "loading"}
               className="px-md py-sm rounded-lg bg-primary text-on-primary text-label-md shadow-sm hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-xs"
@@ -148,7 +124,7 @@ export default function FlashcardsPage() {
         {phase === "idle" && (
           <div className="flex flex-col items-center justify-center py-2xl text-center text-outline">
             <span className="material-symbols-outlined text-[48px] mb-md opacity-30">style</span>
-            <p className="text-body-lg">Selecciona una nota y pulsa "Generar" o "Cargar existentes".</p>
+            <p className="text-body-lg">Selecciona una nota y pulsa "Generar".</p>
           </div>
         )}
 
@@ -289,7 +265,7 @@ export default function FlashcardsPage() {
                 <div className="flex-1 space-y-xs overflow-y-auto pr-sm custom-scrollbar max-h-[340px]">
                   {flashcards.map((fc, i) => (
                     <button
-                      key={fc.id}
+                      key={i}
                       onClick={() => { setCardIndex(i); setFlipped(false); }}
                       className={`w-full text-left block p-sm rounded-lg border transition-all group ${
                         i === cardIndex

@@ -67,31 +67,6 @@ export interface SearchResultItem extends NoteListItem {
 }
 
 export interface Flashcard {
-  id: number;
-  pregunta: string;
-  respuesta: string;
-}
-
-/** Returned by GET/POST /api/notes/:id/flashcards. */
-export interface FlashcardsResult {
-  note_id: string;
-  flashcards: Flashcard[];
-}
-
-/** Returned by GET/POST /api/notes/:id/summary. */
-export interface SummaryResult {
-  note_id: string;
-  summary_md: string | null;
-}
-
-export interface AppConfig {
-  notion: boolean;
-  drive: boolean;
-  obsidian: boolean;
-  pinecone: boolean;
-}
-
-export interface Flashcard {
   pregunta: string;
   respuesta: string;
 }
@@ -99,4 +74,27 @@ export interface Flashcard {
 export interface FlashcardSet {
   note_id: string;
   flashcards: Flashcard[];
+}
+
+export interface SummaryResponse {
+  title: string;
+  summary: string;
+  key_concepts: string[];
+  note_ids: string[];
+  style: string;
+}
+
+export interface SummaryNoteItem {
+  note_id: string;
+  title: string;
+  filename: string;
+  date: string;
+  tags: string[];
+}
+
+export interface AppConfig {
+  notion: boolean;
+  drive: boolean;
+  obsidian: boolean;
+  pinecone: boolean;
 }
