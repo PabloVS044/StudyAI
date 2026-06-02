@@ -1,5 +1,7 @@
 """Integration endpoints: Notion, Google Drive, Obsidian."""
 import re
+from pathlib import Path
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
@@ -195,7 +197,13 @@ async def save_obsidian_vault(note_id: str, user_id: str = Depends(get_current_u
         raise HTTPException(status_code=500, detail=f"Error al guardar en vault: {exc}")
 
     supabase_client.update_note(note_id, user_id, obsidian_path=path)
-    return {"success": True, "path": path}
+
+    # obsidian:// deep link so the frontend can open the note in the desktop app.
+    vault_name = settings.OBSIDIAN_VAULT_NAME or Path(settings.OBSIDIAN_VAULT_PATH).name
+    rel_file = f"StudyAI/{Path(path).stem}"
+    obsidian_uri = f"obsidian://open?vault={quote(vault_name)}&file={quote(rel_file)}"
+
+    return {"success": True, "path": path, "obsidian_uri": obsidian_uri}
 
 
 # ── Validation ────────────────────────────────────────────────────────────────
