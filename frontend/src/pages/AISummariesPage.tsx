@@ -142,6 +142,7 @@ export default function AISummariesPage() {
           <div className="p-md flex flex-col gap-4 border-b border-outline-variant/30">
             <h2 className="text-headline-md text-primary">Notas</h2>
           </div>
+
           <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-2 custom-scrollbar">
             {notesLoading && (
               <div className="flex items-center gap-2 p-4 text-on-surface-variant text-sm">
@@ -179,28 +180,26 @@ export default function AISummariesPage() {
           </div>
         </aside>
 
-        {/* Right Pane: Reading Canvas */}
-        <section className="flex-1 flex flex-col bg-surface-container-lowest overflow-hidden relative">
-          {/* Action Bar */}
+        <section className="flex-1 flex flex-col bg-surface-container-lowest overflow-hidden relative min-h-0">
           <div className="h-14 border-b border-outline-variant/20 flex items-center justify-between px-lg bg-surface-container-lowest/90 backdrop-blur z-10">
-            <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+            <div className="flex items-center gap-2 text-sm text-on-surface-variant min-w-0">
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
               <span className="font-medium text-caption">
                 {selectedNote ? selectedNote.title : "Selecciona una nota"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors">
-                <span className="material-symbols-outlined text-[20px]">ios_share</span>
-              </button>
-              <div className="h-4 w-px bg-outline-variant/50 mx-1" />
-              <button className="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors">
-                <span className="material-symbols-outlined text-[20px]">more_horiz</span>
+              <button
+                onClick={() => handleGenerate()}
+                disabled={selectedIds.size === 0 || generating}
+                className="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-40"
+                aria-label="Regenerar resumen"
+              >
+                <span className={`material-symbols-outlined text-[20px] ${generating ? "animate-spin" : ""}`}>sync</span>
               </button>
             </div>
           </div>
 
-          {/* Main Reading Area */}
           <div className="flex-1 overflow-y-auto px-4 md:px-lg lg:px-xl py-lg pb-32 scroll-smooth custom-scrollbar">
             <article className="max-w-3xl mx-auto">
               {/* Note title header */}
@@ -273,19 +272,19 @@ export default function AISummariesPage() {
               <span className="text-label-md">{generating ? "Generando..." : summaryMd ? "Regenerar" : "Generar resumen"}</span>
             </button>
             <div className="h-6 w-px bg-outline-variant/30 mx-1" />
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full text-on-surface hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-[20px] text-secondary">compress</span>
-              <span className="text-label-md">Shorten</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full text-on-surface hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-[20px] text-secondary">expand_content</span>
-              <span className="text-label-md">Detailed</span>
-            </button>
-            <div className="h-6 w-px bg-outline-variant/30 mx-1" />
-            <button className="flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-on-primary hover:bg-primary-container transition-colors shadow-sm bg-gradient-to-b from-white/5 to-transparent">
-              <span className="material-symbols-outlined text-[20px]">quiz</span>
-              <span className="text-label-md">Make Flashcards</span>
-            </button>
+            {styleOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => currentSummary ? handleGenerate(option.value) : setStyle(option.value)}
+                disabled={generating}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-container transition-colors disabled:opacity-40 ${
+                  style === option.value ? "text-primary" : "text-on-surface"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] text-secondary">{option.icon}</span>
+                <span className="text-label-md">{option.label}</span>
+              </button>
+            ))}
           </div>
         </section>
       </main>

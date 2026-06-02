@@ -3,8 +3,22 @@ import type { AppConfig, ExtractResult, FlashcardsResult, NoteDetail, NoteListIt
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
+type TokenProvider = () => Promise<string | null>;
+let _tokenProvider: TokenProvider | null = null;
+
+export function setTokenProvider(fn: TokenProvider) {
+  _tokenProvider = fn;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, init);
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     let msg = res.statusText;
     try { msg = (await res.json()).detail ?? msg; } catch { /* ignore */ }
@@ -54,6 +68,46 @@ export function searchNotes(query: string, topK = 5): Promise<SearchResultItem[]
   });
 }
 
+// ── Summaries ────────────────────────────────────────────────────────────────
+export interface SummaryRequest {
+  note_ids: string[];
+  style?: "brief" | "detailed" | "bullet_points";
+  language?: string;
+}
+
+export interface SummaryResponse {
+  title: string;
+  summary: string;
+  key_concepts: string[];
+  note_ids: string[];
+  style: string;
+}
+
+export interface SummaryNoteItem {
+  note_id: string;
+  title: string;
+  filename: string;
+  date: string;
+  tags: string[];
+}
+
+export function generateSummary(payload: SummaryRequest): Promise<SummaryResponse> {
+  return req("/api/summaries/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
+  return req("/api/summaries/list");
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
+  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
+}
+
 // ── Integrations ──────────────────────────────────────────────────────────────
 export function syncNotion(noteId: string): Promise<{ success: boolean; url: string }> {
   return req(`/api/integrations/notion/${noteId}`, { method: "POST" });
@@ -77,7 +131,12 @@ export function validateIntegrations(): Promise<{
 }
 
 export async function exportObsidian(noteId: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
+  const headers: Record<string, string> = {};
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`, { headers });
   if (!res.ok) throw new Error("Error al exportar");
   const blob = await res.blob();
   const disp = res.headers.get("Content-Disposition") ?? "";

@@ -24,6 +24,7 @@ app.include_router(extract.router,       prefix="/api/extract",       tags=["ext
 app.include_router(notes.router,         prefix="/api/notes",         tags=["notes"])
 app.include_router(integrations.router,  prefix="/api/integrations",  tags=["integrations"])
 app.include_router(config_router.router, prefix="/api/config",        tags=["config"])
+app.include_router(summaries.router,     prefix="/api/summaries",     tags=["summaries"])
 app.include_router(chat.router,          prefix="/api/chat",          tags=["chat"])
 app.include_router(study.router,         prefix="/api/notes",         tags=["study"])
 
@@ -55,4 +56,3 @@ async def health():
 @app.on_event("startup")
 async def startup():
     Path(settings.UPLOADS_DIR).mkdir(exist_ok=True)
-    sqlite_client.init_db(settings.DB_PATH)

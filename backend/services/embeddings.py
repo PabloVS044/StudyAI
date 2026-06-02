@@ -20,6 +20,8 @@ def note_to_embed_text(content: dict) -> str:
     parts: list[str] = []
     if content.get("titulo"):
         parts.append(content["titulo"])
+    if content.get("tags"):
+        parts.extend(str(tag) for tag in content.get("tags") or [])
     if content.get("texto_principal"):
         parts.append(content["texto_principal"])
     for d in content.get("definiciones") or []:

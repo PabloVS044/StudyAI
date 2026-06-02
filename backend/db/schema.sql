@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS notes (
     filename    TEXT NOT NULL,
     image_ext   TEXT,
     content_json TEXT NOT NULL,
+    tags        TEXT NOT NULL DEFAULT '[]',
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     notion_url  TEXT,
     drive_file_id TEXT,

@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
-mistralai
+mistralai==1.12.4
 pinecone
 notion-client
 google-api-python-client
@@ -11,3 +11,6 @@ google-auth-oauthlib
 google-auth-httplib2
 aiofiles
 pillow
+supabase
+python-jose[cryptography]
+httpx

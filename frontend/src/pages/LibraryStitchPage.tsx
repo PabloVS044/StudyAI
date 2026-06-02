@@ -36,8 +36,7 @@ export default function LibraryPage() {
   return (
     <>
       <TopBar searchPlaceholder="Search your library..." />
-      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-container-max w-full mx-auto">
-        {/* Page Header */}
+      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-container-max w-full mx-auto overflow-y-auto">
         <div className="mb-lg flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-display-lg text-on-background mb-2">Library</h2>
@@ -130,6 +129,29 @@ export default function LibraryPage() {
           </div>
         )}
       </main>
+
+      <Modal
+        open={!!selectedNote}
+        onClose={() => setSelectedNote(null)}
+        title={selectedNote?.title}
+        wide
+      >
+        {loadingDetail ? (
+          <div className="flex justify-center py-10"><Spinner size={28} /></div>
+        ) : detailError ? (
+          <p className="text-red-400 text-sm">{detailError}</p>
+        ) : detail ? (
+          <NoteDetailView
+            noteId={detail.note_id}
+            filename={detail.filename}
+            imageExt={detail.image_ext}
+            content={detail.content}
+            saved
+            notionUrl={detail.notion_url}
+            driveUrl={detail.drive_url}
+          />
+        ) : null}
+      </Modal>
     </>
   );
 }
