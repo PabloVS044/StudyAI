@@ -6,6 +6,7 @@ import Spinner from "../components/Spinner";
 import { extractImages, saveNote } from "../api/client";
 import type { ExtractResult } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
+import { notify } from "../lib/toast";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"]);
 
@@ -26,6 +27,8 @@ const COPY = {
     results: "Resultados",
     openCamera: "Abrir cámara",
     errorDefault: "Error al conectar con el backend",
+    noteSaved: "Nota guardada",
+    noteSavedError: "Error al guardar la nota",
     inputTypes: [
       { icon: "document_scanner", label: "Foto de Apunte", action: "camera" },
       { icon: "draw", label: "Nota en Tablet", action: "file" },
@@ -51,6 +54,8 @@ const COPY = {
     results: "Results",
     openCamera: "Open camera",
     errorDefault: "Error connecting to backend",
+    noteSaved: "Note saved",
+    noteSavedError: "Error saving note",
     inputTypes: [
       { icon: "document_scanner", label: "Note Photo", action: "camera" },
       { icon: "draw", label: "Tablet Note", action: "file" },
@@ -126,8 +131,11 @@ export default function CapturePage() {
           })
       );
       setSavedIds(autoSaved);
+      if (autoSaved.size > 0) notify.success(t.noteSaved);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t.errorDefault);
+      const msg = e instanceof Error ? e.message : t.errorDefault;
+      setError(msg);
+      notify.error(t.noteSavedError);
     } finally {
       setExtracting(false);
     }

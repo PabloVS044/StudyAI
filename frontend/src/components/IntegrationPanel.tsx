@@ -4,6 +4,7 @@ import Spinner from "./Spinner";
 import { getMyIntegrations, exportNotion, exportDrive, exportObsidian, getObsidianMarkdown } from "../api/client";
 import { useAppSettings } from "../context/AppSettings";
 import type { NoteContent } from "../types/note";
+import { notify } from "../lib/toast";
 import {
   isSupported,
   pickVaultFolder,
@@ -57,6 +58,13 @@ const COPY = {
     savedVault: "Guardado en Vault",
     openObsidian: "Abrir en Obsidian",
     retryObsidian: "Reintentar",
+    toastSavedNotion: "Guardado en Notion",
+    toastSavedDrive: "Guardado en Drive",
+    toastSavedObsidian: "Guardado en Obsidian",
+    toastErrNotion: "No se pudo exportar a Notion",
+    toastErrDrive: "No se pudo subir a Drive",
+    toastErrObsidian: "No se pudo guardar en Obsidian",
+    toastErrSave: "No se pudo guardar la nota",
   },
   en: {
     syncLabel: "Save and sync",
@@ -88,6 +96,13 @@ const COPY = {
     savedVault: "Saved to Vault",
     openObsidian: "Open in Obsidian",
     retryObsidian: "Retry",
+    toastSavedNotion: "Saved to Notion",
+    toastSavedDrive: "Saved to Drive",
+    toastSavedObsidian: "Saved to Obsidian",
+    toastErrNotion: "Could not export to Notion",
+    toastErrDrive: "Could not upload to Drive",
+    toastErrObsidian: "Could not save to Obsidian",
+    toastErrSave: "Could not save the note",
   },
 } as const;
 
@@ -146,12 +161,11 @@ export default function IntegrationPanel({
   async function handleSave() {
     if (!onSave) return;
     setSavingNote(true);
-    setErrorMsg("");
     try {
       await onSave();
       setSaved(true);
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : t.saving);
+      notify.error(e instanceof Error ? e.message : t.toastErrSave);
     } finally {
       setSavingNote(false);
     }
@@ -159,40 +173,40 @@ export default function IntegrationPanel({
 
   async function handleNotion() {
     setNotionStatus("loading");
-    setErrorMsg("");
     try {
       const res = await exportNotion(noteId);
       setNotionUrl(res.url);
       setNotionStatus("done");
+      notify.success(t.toastSavedNotion);
     } catch (e) {
       setNotionStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : t.retryNotion);
+      notify.error(e instanceof Error ? e.message : t.toastErrNotion);
     }
   }
 
   async function handleDrive() {
     setDriveStatus("loading");
-    setErrorMsg("");
     try {
       const res = await exportDrive(noteId);
       setDriveUrl(res.url);
       setDriveStatus("done");
+      notify.success(t.toastSavedDrive);
     } catch (e) {
       setDriveStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : t.retryDrive);
+      notify.error(e instanceof Error ? e.message : t.toastErrDrive);
     }
   }
 
   async function handleObsidianExport() {
     setObsExportStatus("loading");
-    setErrorMsg("");
     try {
       await exportObsidian(noteId);
       setObsExportStatus("done");
+      notify.success(t.toastSavedObsidian);
       setTimeout(() => setObsExportStatus("idle"), 3000);
     } catch (e) {
       setObsExportStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : t.retryObsidian);
+      notify.error(e instanceof Error ? e.message : t.toastErrObsidian);
     }
   }
 
@@ -217,16 +231,16 @@ export default function IntegrationPanel({
   async function handleObsidianVault() {
     if (!vaultHandle || !vaultName) return;
     setObsVaultStatus("loading");
-    setErrorMsg("");
     try {
       const md = await getObsidianMarkdown(noteId);
       const stem = safeFilename(content.titulo ?? filename);
       await writeNote(vaultHandle, `${stem}.md`, md);
       setObsUri(obsidianUri(vaultName, stem));
       setObsVaultStatus("done");
+      notify.success(t.toastSavedObsidian);
     } catch (e) {
       setObsVaultStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : t.retryObsidian);
+      notify.error(e instanceof Error ? e.message : t.toastErrObsidian);
     }
   }
 

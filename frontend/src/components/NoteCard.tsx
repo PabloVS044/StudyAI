@@ -10,19 +10,29 @@ import NoteDetailView from "./NoteDetailView";
 import Spinner from "./Spinner";
 import type { NoteDetail, NoteListItem } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
+import { confirmDialog } from "../lib/swal";
+import { notify } from "../lib/toast";
 
 const COPY = {
   es: {
     formulas: "Fórmulas",
     diagrams: "Diagramas",
     errorLoad: "Error al cargar la nota.",
-    confirmDelete: (title: string) => `¿Eliminar "${title}"?`,
+    confirmDeleteTitle: "¿Eliminar nota?",
+    confirmDeleteText: (title: string) => `Se eliminará "${title}" de forma permanente.`,
+    confirmDeleteBtn: "Eliminar",
+    cancelBtn: "Cancelar",
+    deleteSuccess: "Nota eliminada",
   },
   en: {
     formulas: "Formulas",
     diagrams: "Diagrams",
     errorLoad: "Error loading the note.",
-    confirmDelete: (title: string) => `Delete "${title}"?`,
+    confirmDeleteTitle: "Delete note?",
+    confirmDeleteText: (title: string) => `"${title}" will be permanently deleted.`,
+    confirmDeleteBtn: "Delete",
+    cancelBtn: "Cancel",
+    deleteSuccess: "Note deleted",
   },
 } as const;
 
@@ -53,9 +63,17 @@ export default function NoteCard({ note, onDeleted }: Props) {
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm(t.confirmDelete(note.title))) return;
+    const ok = await confirmDialog({
+      title: t.confirmDeleteTitle,
+      text: t.confirmDeleteText(note.title),
+      confirmText: t.confirmDeleteBtn,
+      cancelText: t.cancelBtn,
+      icon: "warning",
+    });
+    if (!ok) return;
     setDeleting(true);
     await deleteNote(note.note_id).catch(() => {});
+    notify.success(t.deleteSuccess);
     onDeleted();
   }
 

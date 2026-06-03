@@ -46,9 +46,7 @@ export default function SignUpPage() {
         {/* Branding overlay */}
         <div className="relative z-10 flex flex-col items-center gap-6 px-12 text-center">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-on-primary/20 flex items-center justify-center">
-              <span className="text-2xl font-bold text-on-primary">S</span>
-            </div>
+            <img src="/logo.png" alt="StudyAI" className="w-12 h-12 rounded-xl object-cover" />
             <span className="text-3xl font-extrabold text-on-primary tracking-tight">
               StudyAI
             </span>

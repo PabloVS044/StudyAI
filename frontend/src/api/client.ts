@@ -94,6 +94,14 @@ export function notionConnectUrl(): Promise<{ auth_url: string }> {
   return req("/api/integrations/notion/connect");
 }
 
+export function exchangeNotion(code: string, state: string): Promise<{ connected: boolean; account: string }> {
+  return req("/api/integrations/notion/exchange", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, state }),
+  });
+}
+
 export function listNotionParents(): Promise<{ id: string; title: string }[]> {
   return req("/api/integrations/notion/parents");
 }

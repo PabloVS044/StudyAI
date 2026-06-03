@@ -78,18 +78,24 @@ async def notion_connect(user_id: str = Depends(get_current_user)):
     return {"auth_url": auth_url}
 
 
-@router.get("/notion/callback")
-async def notion_callback(code: str, state: str):
-    state_data = supabase_client.pop_oauth_state(state)
-    if not state_data:
+class NotionExchangeBody(BaseModel):
+    code: str
+    state: str
+
+
+@router.post("/notion/exchange")
+async def notion_exchange(body: NotionExchangeBody, user_id: str = Depends(get_current_user)):
+    state_data = supabase_client.pop_oauth_state(body.state)
+    if not state_data or state_data.get("provider") != "notion":
         raise HTTPException(status_code=400, detail="Estado OAuth invalido o expirado")
-    user_id = state_data["user_id"]
+    if state_data["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Estado OAuth no corresponde al usuario")
 
     try:
         token_data = notion_service.exchange_code(
             client_id=settings.NOTION_OAUTH_CLIENT_ID,
             client_secret=settings.NOTION_OAUTH_CLIENT_SECRET,
-            code=code,
+            code=body.code,
             redirect_uri=settings.NOTION_REDIRECT_URI,
         )
     except Exception as exc:
@@ -101,7 +107,7 @@ async def notion_callback(code: str, state: str):
         access_token=token_data.get("access_token"),
         account_label=token_data.get("workspace_name", ""),
     )
-    return RedirectResponse(url=settings.FRONTEND_URL.rstrip("/") + "/integrations")
+    return {"connected": True, "account": token_data.get("workspace_name", "")}
 
 
 @router.get("/notion/parents")
