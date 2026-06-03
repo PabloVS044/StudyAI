@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
 import Sidebar from "./components/Sidebar";
+import BottomNav from "./components/BottomNav";
 import AuthSync from "./components/AuthSync";
 import LandingPage from "./pages/LandingPage";
 import SignInPage from "./pages/SignInPage";
@@ -21,7 +22,8 @@ function AppShell() {
       <AuthSync />
       <div className="flex h-screen bg-background text-on-background overflow-hidden">
         <Sidebar />
-        <div className="flex-1 overflow-y-auto">
+        <BottomNav />
+        <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Routes>
             <Route path="/dashboard"        element={<DashboardPage />} />
             <Route path="/capture"          element={<CapturePage />} />

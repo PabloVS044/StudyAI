@@ -25,7 +25,7 @@ export default function Modal({ open, onClose, title, children, wide }: Props) {
       onClick={onClose}
     >
       <div
-        className={`relative bg-[#17171f] border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] ${wide ? "w-full max-w-4xl" : "w-full max-w-2xl"}`}
+        className={`relative bg-[#17171f] border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] mx-2 sm:mx-0 ${wide ? "w-full max-w-4xl" : "w-full max-w-2xl"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -365,7 +365,7 @@ export default function IntegrationPanel({
           <>
             {!fsSupported ? (
               // Fallback: download-only
-              <span className="flex items-center gap-2 flex-wrap">
+              <span className="flex flex-wrap items-center gap-2">
                 <ActionBtn
                   icon={obsExportStatus === "loading" ? <Spinner size={14} /> : obsExportStatus === "done" ? <CheckCircle2 size={14} /> : <FileCode2 size={14} />}
                   label={obsExportStatus === "loading" ? t.exporting : obsExportStatus === "done" ? t.downloaded : t.exportMd}
@@ -377,7 +377,7 @@ export default function IntegrationPanel({
               </span>
             ) : !vaultHandle ? (
               // No folder chosen yet — show export fallback + pick button
-              <span className="flex items-center gap-2 flex-wrap">
+              <span className="flex flex-wrap items-center gap-2">
                 <ActionBtn
                   icon={obsExportStatus === "loading" ? <Spinner size={14} /> : obsExportStatus === "done" ? <CheckCircle2 size={14} /> : <FileCode2 size={14} />}
                   label={obsExportStatus === "loading" ? t.exporting : obsExportStatus === "done" ? t.downloaded : t.exportMd}
@@ -394,8 +394,8 @@ export default function IntegrationPanel({
               </span>
             ) : (
               // Folder chosen
-              <span className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-slate-400">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-slate-400 break-all">
                   {t.vaultFolder}: <span className="text-slate-200 font-medium">{vaultName}</span>
                 </span>
                 <button

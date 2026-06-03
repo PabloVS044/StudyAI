@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
-const BASE = import.meta.env.VITE_API_URL ?? "";
+const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
 type TokenProvider = () => Promise<string | null>;
 let _tokenProvider: TokenProvider | null = null;

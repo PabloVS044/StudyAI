@@ -72,10 +72,10 @@ export default function LibraryPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-container-max w-full mx-auto overflow-y-auto">
+      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-4 md:px-gutter pb-xl max-w-container-max w-full mx-auto overflow-y-auto">
         <div className="mb-lg flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-display-lg text-on-background mb-2">{t.title}</h2>
+            <h2 className="text-headline-lg md:text-display-lg text-on-background mb-2">{t.title}</h2>
             <p className="text-body-lg text-on-surface-variant max-w-2xl">
               {t.subtitle}
               {!loading && notes.length > 0 && (
@@ -104,7 +104,7 @@ export default function LibraryPage() {
               <span className="material-symbols-outlined text-[20px]">filter_list</span>
               {t.filterLabel}
             </div>
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <div className="relative flex-1 min-w-0 max-w-sm w-full">
               <span className="material-symbols-outlined text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
               <input
                 type="text"

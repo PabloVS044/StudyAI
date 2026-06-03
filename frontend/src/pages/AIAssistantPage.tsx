@@ -202,16 +202,16 @@ export default function AIAssistantPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 ml-0 md:ml-64 h-[calc(100vh)] md:h-[calc(100vh-4rem)] md:mt-16 flex flex-col bg-surface overflow-hidden">
+      <main className="flex-1 ml-0 md:ml-64 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] mt-16 flex flex-col bg-surface overflow-hidden">
         {/* Workspace Header */}
-        <div className="px-lg py-md border-b border-surface-container-high bg-surface flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
+        <div className="px-4 md:px-lg py-3 md:py-md border-b border-surface-container-high bg-surface flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 flex-shrink-0">
           <div>
-            <h2 className="text-headline-lg text-on-surface">{t.pageTitle}</h2>
-            <p className="text-body-md text-on-surface-variant">{t.pageSubtitle}</p>
+            <h2 className="text-headline-md md:text-headline-lg text-on-surface">{t.pageTitle}</h2>
+            <p className="text-body-sm md:text-body-md text-on-surface-variant hidden sm:block">{t.pageSubtitle}</p>
           </div>
-          <div className="flex items-center gap-2 bg-surface-container-low p-1 rounded-lg border border-surface-variant shadow-sm">
-            <span className="material-symbols-outlined text-on-surface-variant ml-2">tune</span>
-            <select className="bg-transparent border-none text-body-md text-on-surface focus:ring-0 cursor-pointer py-1 pr-8">
+          <div className="flex items-center gap-2 bg-surface-container-low p-1 rounded-lg border border-surface-variant shadow-sm w-full sm:w-auto">
+            <span className="material-symbols-outlined text-on-surface-variant ml-2 text-[18px]">tune</span>
+            <select className="bg-transparent border-none text-body-md text-on-surface focus:ring-0 cursor-pointer py-1 pr-4 flex-1 sm:flex-none sm:pr-8">
               <option>{t.contextAll}</option>
               <option selected>{t.contextNotebook}</option>
             </select>
@@ -223,20 +223,20 @@ export default function AIAssistantPage() {
           {/* Left Side: Chat */}
           <div className="flex-1 flex flex-col min-w-0 border-r border-surface-container-high relative">
             {/* Chat Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-lg space-y-md custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-lg space-y-md custom-scrollbar">
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 ${msg.sender === "user" ? "flex-row-reverse" : ""}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                <div key={msg.id} className={`flex gap-2 md:gap-4 ${msg.sender === "user" ? "flex-row-reverse" : ""}`}>
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                     msg.sender === "ai" ? "bg-primary shadow-sm" : "bg-surface-variant"
                   }`}>
                     {msg.sender === "ai" ? (
-                      <span className="material-symbols-outlined text-on-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
+                      <span className="material-symbols-outlined text-on-primary text-[18px] md:text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
                     ) : (
-                      <span className="material-symbols-outlined text-on-surface text-[20px]">person</span>
+                      <span className="material-symbols-outlined text-on-surface text-[18px] md:text-[20px]">person</span>
                     )}
                   </div>
 
-                  <div className={`flex-1 max-w-3xl ${msg.sender === "user" ? "max-w-2xl" : ""}`}>
+                  <div className={`flex-1 min-w-0 max-w-3xl ${msg.sender === "user" ? "max-w-2xl" : ""}`}>
                     {msg.sender === "user" ? (
                       <div className="bg-surface-variant text-on-surface-variant rounded-2xl rounded-tr-sm p-4 shadow-sm">
                         <p className="text-body-md whitespace-pre-wrap">{msg.content}</p>
@@ -245,7 +245,7 @@ export default function AIAssistantPage() {
                       <div className="bg-surface-container-lowest border border-surface-variant shadow-sm rounded-2xl rounded-tl-sm p-md">
                         <p className="text-body-md text-on-surface mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                         {msg.suggestions && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                             {msg.suggestions.map((s, i) => (
                               <button
                                 key={i}
@@ -271,9 +271,9 @@ export default function AIAssistantPage() {
 
               {/* Loading State Indicator */}
               {loading && (
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary shadow-sm animate-pulse">
-                    <span className="material-symbols-outlined text-on-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
+                <div className="flex gap-2 md:gap-4">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary shadow-sm animate-pulse">
+                    <span className="material-symbols-outlined text-on-primary text-[18px] md:text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
                   </div>
                   <div className="flex-1 max-w-3xl">
                     <div className="bg-surface-container-lowest border border-surface-variant shadow-sm rounded-2xl rounded-tl-sm p-md flex items-center gap-3">
@@ -292,7 +292,7 @@ export default function AIAssistantPage() {
             </div>
 
             {/* Input Area */}
-            <div className="p-md bg-surface border-t border-surface-container-high shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
+            <div className="p-3 md:p-md bg-surface border-t border-surface-container-high shadow-[0_-4px_16px_rgba(0,0,0,0.02)]">
               <div className="relative bg-surface-container-low rounded-2xl border border-surface-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm transition-all">
                 <textarea
                   className="w-full bg-transparent border-none resize-none p-4 pr-16 text-body-md text-on-surface focus:ring-0 placeholder-on-surface-variant/50"
