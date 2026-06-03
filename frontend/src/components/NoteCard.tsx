@@ -85,7 +85,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
     <>
       <div
         onClick={openDetail}
-        className="group relative bg-[#17171f] hover:bg-[#1e1e28] border border-slate-700 hover:border-violet-500/50 rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
+        className="group relative bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary/40 rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
       >
         {/* Thumbnail */}
         {note.image_ext ? (
@@ -96,27 +96,27 @@ export default function NoteCard({ note, onDeleted }: Props) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-36 bg-slate-800 flex items-center justify-center">
-            <FileText className="text-slate-600" size={32} />
+          <div className="w-full h-36 bg-surface-container-high flex items-center justify-center">
+            <FileText className="text-on-surface-variant/30" size={32} />
           </div>
         )}
 
         {/* Body */}
         <div className="p-3">
-          <h3 className="font-semibold text-sm text-white truncate">{note.title}</h3>
-          <p className="text-xs text-slate-500 mt-0.5 mb-2">{dateStr} · {note.filename}</p>
-          <p className="text-xs text-slate-400 line-clamp-2">{note.text_preview}</p>
+          <h3 className="font-semibold text-sm text-on-surface truncate">{note.title}</h3>
+          <p className="text-xs text-on-surface-variant/60 mt-0.5 mb-2">{dateStr} · {note.filename}</p>
+          <p className="text-xs text-on-surface-variant line-clamp-2">{note.text_preview}</p>
 
           {/* Badges */}
           <div className="flex gap-1.5 mt-2 flex-wrap">
             {note.has_formulas && (
-              <Badge icon={<FlaskConical size={10} />} label={t.formulas} />
+              <Badge icon={<FlaskConical size={10} />} label={t.formulas} color="secondary" />
             )}
             {note.has_diagrams && (
-              <Badge icon={<Network size={10} />} label={t.diagrams} />
+              <Badge icon={<Network size={10} />} label={t.diagrams} color="secondary" />
             )}
             {note.tags?.map((tag) => (
-              <Badge key={tag} icon={null} label={tag} color="teal" />
+              <Badge key={tag} icon={null} label={tag} color="primary" />
             ))}
             {note.notion_url && (
               <a
@@ -124,7 +124,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 px-1.5 py-0.5 rounded-full"
+                className="inline-flex items-center gap-1 text-[10px] bg-surface-container-highest hover:bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded-full border border-outline-variant/50"
               >
                 <ExternalLink size={9} /> Notion
               </a>
@@ -135,7 +135,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 px-1.5 py-0.5 rounded-full"
+                className="inline-flex items-center gap-1 text-[10px] bg-surface-container-highest hover:bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded-full border border-outline-variant/50"
               >
                 <ExternalLink size={9} /> Drive
               </a>
@@ -147,7 +147,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-red-500/80 hover:bg-red-500 text-white rounded-full p-1 transition-all"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-error/80 hover:bg-error text-on-error rounded-full p-1 transition-all"
         >
           {deleting ? <Spinner size={12} /> : <Trash2 size={12} />}
         </button>
@@ -168,7 +168,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
             driveUrl={detail.drive_url}
           />
         ) : (
-          <p className="text-slate-400 text-sm">{t.errorLoad}</p>
+          <p className="text-on-surface-variant text-sm">{t.errorLoad}</p>
         )}
       </Modal>
     </>
@@ -178,18 +178,18 @@ export default function NoteCard({ note, onDeleted }: Props) {
 function Badge({
   icon,
   label,
-  color = "violet",
+  color = "primary",
 }: {
   icon: React.ReactNode;
   label: string;
-  color?: "violet" | "teal";
+  color?: "primary" | "secondary";
 }) {
-  const className = color === "teal"
-    ? "bg-teal-900/30 text-teal-300"
-    : "bg-violet-900/30 text-violet-300";
+  const cls = color === "primary"
+    ? "bg-primary-container/20 text-primary"
+    : "bg-secondary-container/30 text-secondary";
 
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${className}`}>
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${cls}`}>
       {icon} {label}
     </span>
   );
