@@ -25,13 +25,13 @@ export default function Modal({ open, onClose, title, children, wide }: Props) {
       onClick={onClose}
     >
       <div
-        className={`relative bg-[#17171f] border border-slate-700 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] mx-2 sm:mx-0 ${wide ? "w-full max-w-4xl" : "w-full max-w-2xl"}`}
+        className={`relative bg-surface-container-low border border-outline-variant rounded-2xl shadow-2xl flex flex-col max-h-[90vh] mx-2 sm:mx-0 ${wide ? "w-full max-w-4xl" : "w-full max-w-2xl"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
-          <h2 className="font-semibold text-white truncate pr-4">{title ?? ""}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant shrink-0">
+          <h2 className="font-semibold text-on-surface truncate pr-4">{title ?? ""}</h2>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
             <X size={20} />
           </button>
         </div>
