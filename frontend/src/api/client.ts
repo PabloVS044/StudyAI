@@ -76,25 +76,79 @@ export interface SummaryRequest {
 }
 
 // ── Integrations ──────────────────────────────────────────────────────────────
-export function syncNotion(noteId: string): Promise<{ success: boolean; url: string }> {
-  return req(`/api/integrations/notion/${noteId}`, { method: "POST" });
+export interface MyIntegrations {
+  notion: { connected: boolean; account: string | null; book: string | null; available: boolean };
+  google: { connected: boolean; account: string | null; folder: string | null; available: boolean };
 }
 
-export function syncDrive(noteId: string): Promise<{ success: boolean; url: string }> {
-  return req(`/api/integrations/drive/${noteId}`, { method: "POST" });
+export function getMyIntegrations(): Promise<MyIntegrations> {
+  return req("/api/integrations/me");
 }
 
-export function getGoogleAuthUrl(): Promise<{ auth_url: string }> {
-  return req("/api/integrations/google/auth-url");
+export function disconnectIntegration(provider: "notion" | "google"): Promise<{ disconnected: boolean }> {
+  return req(`/api/integrations/${provider}`, { method: "DELETE" });
 }
 
-export function validateIntegrations(): Promise<{
-  mistral: boolean;
-  pinecone: boolean;
-  notion: boolean;
-  drive: boolean;
-}> {
-  return req("/api/integrations/validate", { method: "POST" });
+// Notion
+export function notionConnectUrl(): Promise<{ auth_url: string }> {
+  return req("/api/integrations/notion/connect");
+}
+
+export function listNotionParents(): Promise<{ id: string; title: string }[]> {
+  return req("/api/integrations/notion/parents");
+}
+
+export function listNotionBooks(): Promise<{ id: string; title: string }[]> {
+  return req("/api/integrations/notion/books");
+}
+
+export function createNotionBook(payload: { title: string; parent_page_id?: string }): Promise<{ id: string; title: string }> {
+  return req("/api/integrations/notion/book", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function selectNotionBook(payload: { database_id: string; title: string }): Promise<{ id: string; title: string }> {
+  return req("/api/integrations/notion/select-book", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function exportNotion(noteId: string): Promise<{ success: boolean; url: string }> {
+  return req(`/api/integrations/notion/export/${noteId}`, { method: "POST" });
+}
+
+// Google Drive
+export function googleConnectUrl(): Promise<{ auth_url: string }> {
+  return req("/api/integrations/google/connect");
+}
+
+export function listDriveFolders(): Promise<{ id: string; name: string }[]> {
+  return req("/api/integrations/google/folders");
+}
+
+export function createDriveFolder(payload: { name: string; parent_id?: string }): Promise<{ id: string; name: string }> {
+  return req("/api/integrations/google/folder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function selectDriveFolder(payload: { folder_id: string; name: string }): Promise<{ id: string; name: string }> {
+  return req("/api/integrations/google/select-folder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function exportDrive(noteId: string): Promise<{ success: boolean; url: string }> {
+  return req(`/api/integrations/drive/export/${noteId}`, { method: "POST" });
 }
 
 export async function exportObsidian(noteId: string): Promise<void> {
