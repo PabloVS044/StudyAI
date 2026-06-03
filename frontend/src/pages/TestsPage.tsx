@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import TopBar from "../components/TopBar";
-import { listNotes, generateQuiz, saveQuizAttempt } from "../api/client";
-import type { NoteListItem, QuizQuestion, QuizResult } from "../types/note";
+import { listNotes, listNotebooks, generateQuiz, generateExam, saveQuizAttempt } from "../api/client";
+import type { NoteListItem, Notebook, QuizQuestion, QuizResult, ExamResult } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
 import { notify } from "../lib/toast";
 import { alertSuccess } from "../lib/swal";
@@ -10,8 +11,15 @@ const COPY = {
   es: {
     title: "Tests",
     subtitle: "Pon a prueba tu conocimiento con preguntas de opcion multiple.",
+    source: "Origen",
+    sourceNote: "Una nota",
+    sourceNotebook: "Libro completo",
+    sourceMulti: "Varias notas",
     note: "Nota",
     chooseNote: "-- Elige una nota --",
+    chooseNotebook: "-- Elige un libro --",
+    selectNotes: "Selecciona las notas",
+    noNotesInSource: "No hay notas disponibles.",
     difficulty: "Dificultad",
     easy: "Facil",
     medium: "Medio",
@@ -42,6 +50,8 @@ const COPY = {
     savingError: "Error al guardar el intento.",
     generateError: "Error al generar el test.",
     noNoteSelected: "Selecciona una nota primero.",
+    noNotebookSelected: "Selecciona un libro primero.",
+    noNotesSelected: "Selecciona al menos una nota.",
     idleMsg: 'Configura tu test y pulsa "Generar test".',
     impossibleFail: (needed: number) =>
       `Progreso NO valido - no lograste ${needed} seguidas.`,
@@ -52,8 +62,15 @@ const COPY = {
   en: {
     title: "Tests",
     subtitle: "Challenge yourself with multiple-choice questions.",
+    source: "Source",
+    sourceNote: "Single note",
+    sourceNotebook: "Full notebook",
+    sourceMulti: "Multiple notes",
     note: "Note",
     chooseNote: "-- Choose a note --",
+    chooseNotebook: "-- Choose a notebook --",
+    selectNotes: "Select notes",
+    noNotesInSource: "No notes available.",
     difficulty: "Difficulty",
     easy: "Easy",
     medium: "Medium",
@@ -84,6 +101,8 @@ const COPY = {
     savingError: "Error saving attempt.",
     generateError: "Error generating test.",
     noNoteSelected: "Select a note first.",
+    noNotebookSelected: "Select a notebook first.",
+    noNotesSelected: "Select at least one note.",
     idleMsg: 'Configure your test and click "Generate test".',
     impossibleFail: (needed: number) =>
       `Progress NOT valid - you didn't achieve ${needed} in a row.`,
@@ -96,6 +115,7 @@ const COPY = {
 type Phase = "idle" | "loading" | "quiz" | "results";
 type Difficulty = "facil" | "medio" | "dificil";
 type Mode = "normal" | "imposible";
+type Source = "note" | "notebook" | "multi";
 
 interface AnswerRecord {
   chosen: number;
@@ -107,12 +127,17 @@ const COUNT_OPTIONS = [5, 10, 15, 20];
 export default function TestsPage() {
   const { lang } = useAppSettings();
   const t = COPY[lang];
+  const [searchParams] = useSearchParams();
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
-  const [notesLoading, setNotesLoading] = useState(true);
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   // config
+  const [source, setSource] = useState<Source>("note");
   const [selectedNoteId, setSelectedNoteId] = useState("");
+  const [selectedNotebookId, setSelectedNotebookId] = useState<number | null>(null);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [difficulty, setDifficulty] = useState<Difficulty>("medio");
   const [count, setCount] = useState(10);
   const [mode, setMode] = useState<Mode>("normal");
@@ -136,17 +161,44 @@ export default function TestsPage() {
   const [passed, setPassed] = useState(false);
 
   useEffect(() => {
-    listNotes()
-      .then(setNotes)
+    Promise.all([listNotes(), listNotebooks()])
+      .then(([n, nb]) => {
+        setNotes(n);
+        setNotebooks(nb);
+        // preselect notebook from URL param ?notebook=ID
+        const nbParam = searchParams.get("notebook");
+        if (nbParam) {
+          const nbId = parseInt(nbParam, 10);
+          if (!isNaN(nbId)) {
+            setSource("notebook");
+            setSelectedNotebookId(nbId);
+          }
+        }
+      })
       .catch(() => {})
-      .finally(() => setNotesLoading(false));
-  }, []);
+      .finally(() => setDataLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleMultiNote(noteId: string) {
+    setSelectedNoteIds((prev) =>
+      prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId]
+    );
+  }
 
   async function handleGenerate() {
-    if (!selectedNoteId) {
+    if (source === "note" && !selectedNoteId) {
       notify.error(t.noNoteSelected);
       return;
     }
+    if (source === "notebook" && !selectedNotebookId) {
+      notify.error(t.noNotebookSelected);
+      return;
+    }
+    if (source === "multi" && selectedNoteIds.length === 0) {
+      notify.error(t.noNotesSelected);
+      return;
+    }
+
     setPhase("loading");
     setCurrentIndex(0);
     setAnswers([]);
@@ -157,8 +209,28 @@ export default function TestsPage() {
     setMaxStreak(0);
 
     try {
-      const result: QuizResult = await generateQuiz(selectedNoteId, { count, difficulty });
-      setQuestions(result.questions);
+      let qs: QuizQuestion[];
+
+      if (source === "note") {
+        const result: QuizResult = await generateQuiz(selectedNoteId, { count, difficulty });
+        qs = result.questions;
+      } else if (source === "notebook") {
+        const result: ExamResult = await generateExam({
+          notebook_id: selectedNotebookId!,
+          count,
+          difficulty,
+        });
+        qs = result.questions;
+      } else {
+        const result: ExamResult = await generateExam({
+          note_ids: selectedNoteIds,
+          count,
+          difficulty,
+        });
+        qs = result.questions;
+      }
+
+      setQuestions(qs);
       setPhase("quiz");
     } catch (e) {
       notify.error(e instanceof Error ? e.message : t.generateError);
@@ -167,7 +239,7 @@ export default function TestsPage() {
   }
 
   function handleChooseOption(optionIndex: number) {
-    if (chosenOption !== null) return; // already answered
+    if (chosenOption !== null) return;
     setChosenOption(optionIndex);
     setShowExplanation(true);
 
@@ -188,7 +260,6 @@ export default function TestsPage() {
     const isLast = currentIndex === questions.length - 1;
 
     if (isLast) {
-      // compute final values using local vars since state may not flush yet
       const total = questions.length;
       const fc = correct;
       const fms = maxStreak;
@@ -206,7 +277,6 @@ export default function TestsPage() {
       setPassed(p);
       setPhase("results");
 
-      // show feedback
       if (mode === "imposible") {
         const threshold = Math.ceil(0.8 * total);
         if (!p) {
@@ -219,16 +289,24 @@ export default function TestsPage() {
         else notify.error(t.normalFail);
       }
 
-      // save attempt
+      // build attempt payload - note_id required by backend; use first note or empty for multi/notebook
+      const attemptNoteId =
+        source === "note"
+          ? selectedNoteId
+          : source === "multi"
+          ? selectedNoteIds[0] ?? ""
+          : "";
+
       try {
         await saveQuizAttempt({
-          note_id: selectedNoteId,
+          note_id: attemptNoteId,
           difficulty,
           mode,
           total,
           correct: fc,
           max_streak: fms,
           passed: p,
+          notebook_id: source === "notebook" ? selectedNotebookId! : undefined,
         });
       } catch {
         notify.error(t.savingError);
@@ -249,7 +327,6 @@ export default function TestsPage() {
     setCorrect(0);
     setCurrentStreak(0);
     setMaxStreak(0);
-    // reuse same questions
     setTimeout(() => setPhase("quiz"), 0);
   }
 
@@ -275,6 +352,18 @@ export default function TestsPage() {
   const progressPercent = total > 0 ? ((currentIndex + 1) / total) * 100 : 0;
   const currentQ = questions[currentIndex] ?? null;
 
+  const sourceOptions: { value: Source; label: string; icon: string }[] = [
+    { value: "note", label: t.sourceNote, icon: "description" },
+    { value: "notebook", label: t.sourceNotebook, icon: "menu_book" },
+    { value: "multi", label: t.sourceMulti, icon: "checklist" },
+  ];
+
+  const isGenerateDisabled =
+    phase === "loading" ||
+    (source === "note" && !selectedNoteId) ||
+    (source === "notebook" && !selectedNotebookId) ||
+    (source === "multi" && selectedNoteIds.length === 0);
+
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
@@ -292,27 +381,113 @@ export default function TestsPage() {
           <p className="text-caption text-outline mt-xs">{t.subtitle}</p>
         </div>
 
-        {/* Config panel - always visible unless in quiz */}
+        {/* Config panel */}
         {(phase === "idle" || phase === "loading") && (
           <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md mb-gutter">
+
+            {/* Source selector */}
+            <div className="mb-md">
+              <label className="block text-label-md text-on-surface mb-xs">{t.source}</label>
+              <div className="flex flex-wrap gap-xs">
+                {sourceOptions.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => setSource(s.value)}
+                    className={`flex items-center gap-xs px-md py-sm rounded-lg text-label-md border transition-all ${
+                      source === s.value
+                        ? "bg-primary text-on-primary border-primary shadow-sm"
+                        : "bg-surface-container-low border-outline-variant/30 text-on-surface-variant hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{s.icon}</span>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md items-end">
 
-              {/* Note selector */}
+              {/* Source input */}
               <div>
-                <label className="block text-label-md text-on-surface mb-xs">{t.note}</label>
-                {notesLoading ? (
-                  <div className="h-10 bg-surface-container-low rounded-lg animate-pulse" />
-                ) : (
-                  <select
-                    value={selectedNoteId}
-                    onChange={(e) => setSelectedNoteId(e.target.value)}
-                    className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
-                  >
-                    <option value="">{t.chooseNote}</option>
-                    {notes.map((n) => (
-                      <option key={n.note_id} value={n.note_id}>{n.title || n.filename}</option>
-                    ))}
-                  </select>
+                {source === "note" && (
+                  <>
+                    <label className="block text-label-md text-on-surface mb-xs">{t.note}</label>
+                    {dataLoading ? (
+                      <div className="h-10 bg-surface-container-low rounded-lg animate-pulse" />
+                    ) : (
+                      <select
+                        value={selectedNoteId}
+                        onChange={(e) => setSelectedNoteId(e.target.value)}
+                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+                      >
+                        <option value="">{t.chooseNote}</option>
+                        {notes.map((n) => (
+                          <option key={n.note_id} value={n.note_id}>{n.title || n.filename}</option>
+                        ))}
+                      </select>
+                    )}
+                  </>
+                )}
+
+                {source === "notebook" && (
+                  <>
+                    <label className="block text-label-md text-on-surface mb-xs">{t.sourceNotebook}</label>
+                    {dataLoading ? (
+                      <div className="h-10 bg-surface-container-low rounded-lg animate-pulse" />
+                    ) : (
+                      <select
+                        value={selectedNotebookId ?? ""}
+                        onChange={(e) => setSelectedNotebookId(e.target.value ? parseInt(e.target.value, 10) : null)}
+                        className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+                      >
+                        <option value="">{t.chooseNotebook}</option>
+                        {notebooks.map((nb) => (
+                          <option key={nb.id} value={nb.id}>
+                            {nb.name}{nb.note_count != null ? ` (${nb.note_count})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </>
+                )}
+
+                {source === "multi" && (
+                  <>
+                    <label className="block text-label-md text-on-surface mb-xs">
+                      {t.selectNotes}
+                      {selectedNoteIds.length > 0 && (
+                        <span className="ml-xs text-primary font-bold">({selectedNoteIds.length})</span>
+                      )}
+                    </label>
+                    {dataLoading ? (
+                      <div className="h-24 bg-surface-container-low rounded-lg animate-pulse" />
+                    ) : notes.length === 0 ? (
+                      <p className="text-caption text-outline">{t.noNotesInSource}</p>
+                    ) : (
+                      <div className="max-h-36 overflow-y-auto border border-outline-variant/30 rounded-lg bg-surface-container-low divide-y divide-outline-variant/10">
+                        {notes.map((n) => {
+                          const checked = selectedNoteIds.includes(n.note_id);
+                          return (
+                            <label
+                              key={n.note_id}
+                              className={`flex items-center gap-sm px-sm py-xs cursor-pointer transition-colors ${
+                                checked ? "bg-primary/8" : "hover:bg-surface-container"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleMultiNote(n.note_id)}
+                                className="accent-primary w-4 h-4 shrink-0"
+                              />
+                              <span className="text-body-sm text-on-surface truncate">{n.title || n.filename}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -390,7 +565,7 @@ export default function TestsPage() {
             <div className="mt-md flex justify-end">
               <button
                 onClick={handleGenerate}
-                disabled={!selectedNoteId || phase === "loading"}
+                disabled={isGenerateDisabled}
                 className="px-md py-sm rounded-lg bg-primary text-on-primary text-label-md shadow-sm hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-xs"
               >
                 {phase === "loading" ? (
@@ -495,7 +670,7 @@ export default function TestsPage() {
               </div>
             </div>
 
-            {/* Side stats - on mobile shows above question, on lg stacks in sidebar */}
+            {/* Side stats */}
             <div className="lg:col-span-4 flex flex-col gap-md order-1 lg:order-2">
               <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
                 <h3 className="text-label-md text-on-surface mb-md flex items-center gap-sm">

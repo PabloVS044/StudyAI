@@ -111,3 +111,18 @@ export interface QuizResult {
   difficulty: string;
   questions: QuizQuestion[];
 }
+
+export interface Notebook {
+  id: number;
+  user_id?: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  note_count?: number;
+}
+
+export interface ExamResult {
+  questions: QuizQuestion[];
+  difficulty: string;
+  source: { notebook_id?: number; note_ids?: string[] };
+}

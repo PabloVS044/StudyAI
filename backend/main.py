@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from config import settings
-from routers import extract, notes, integrations, config_router, chat, summaries, flashcards, quiz
+from routers import extract, notes, integrations, config_router, chat, summaries, flashcards, quiz, notebooks
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="StudyAI API", version="2.0.0", docs_url="/api/docs")
@@ -46,6 +46,7 @@ app.include_router(summaries.router,     prefix="/api/summaries",     tags=["sum
 app.include_router(chat.router,          prefix="/api/chat",          tags=["chat"])
 app.include_router(flashcards.router,    prefix="/api/flashcards",    tags=["flashcards"])
 app.include_router(quiz.router,          prefix="/api/quiz",          tags=["quiz"])
+app.include_router(notebooks.router,     prefix="/api/notebooks",     tags=["notebooks"])
 
 
 # ── Serve uploaded images ─────────────────────────────────────────────────────

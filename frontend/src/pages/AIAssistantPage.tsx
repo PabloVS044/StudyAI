@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import { chatRag } from "../api/client";
 import { useAppSettings } from "../context/AppSettings";
+import { notify } from "../lib/toast";
 
 const COPY = {
   es: {
@@ -27,6 +28,8 @@ const COPY = {
     tagNote: "Nota",
     errorPrefix: "Error al obtener respuesta del asistente:",
     searchPlaceholder: "Buscar en tus notas...",
+    sourcesLabel: "Fuentes consultadas",
+    noSourcesMsg: "No encontre notas relevantes en tu biblioteca. Sube mas apuntes para mejorar las respuestas.",
   },
   en: {
     pageTitle: "AI Assistant",
@@ -51,6 +54,8 @@ const COPY = {
     tagNote: "Note",
     errorPrefix: "Error getting response from assistant:",
     searchPlaceholder: "Search across your notes...",
+    sourcesLabel: "Sources consulted",
+    noSourcesMsg: "No relevant notes found in your library. Upload more notes to improve answers.",
   },
 } as const;
 
@@ -62,11 +67,19 @@ interface Suggestion {
   text: string;
 }
 
+interface Source {
+  note_id: string;
+  title: string;
+  score: number;
+}
+
 interface Message {
   id: number;
   sender: "ai" | "user";
   content: string;
   suggestions?: Suggestion[];
+  sources?: Source[];
+  noSources?: boolean;
 }
 
 interface Reference {
@@ -112,6 +125,7 @@ export default function AIAssistantPage() {
   const t = COPY[lang];
 
   const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -145,6 +159,13 @@ export default function AIAssistantPage() {
     });
   }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-scroll to bottom on new messages or loading change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
     if (!text) return;
@@ -162,15 +183,19 @@ export default function AIAssistantPage() {
     try {
       const data = await chatRag(text);
 
+      const hasSources = data.sources && data.sources.length > 0;
+
       const aiMessage: Message = {
         id: Date.now() + 1,
         sender: "ai",
         content: data.answer,
+        sources: hasSources ? data.sources : undefined,
+        noSources: !hasSources,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
 
-      if (data.sources && data.sources.length > 0) {
+      if (hasSources) {
         const newRefs: Reference[] = data.sources.map((src) => ({
           title: src.title,
           icon: "description",
@@ -181,12 +206,7 @@ export default function AIAssistantPage() {
         setReferences(newRefs);
       }
     } catch (err) {
-      const errorMessage: Message = {
-        id: Date.now() + 1,
-        sender: "ai",
-        content: `${t.errorPrefix} ${(err as Error).message}`,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      notify.error(`${t.errorPrefix} ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -223,7 +243,7 @@ export default function AIAssistantPage() {
           {/* Left Side: Chat */}
           <div className="flex-1 flex flex-col min-w-0 border-r border-surface-container-high relative">
             {/* Chat Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-lg space-y-md custom-scrollbar">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-lg space-y-md custom-scrollbar">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-2 md:gap-4 ${msg.sender === "user" ? "flex-row-reverse" : ""}`}>
                   <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -244,6 +264,38 @@ export default function AIAssistantPage() {
                     ) : (
                       <div className="bg-surface-container-lowest border border-surface-variant shadow-sm rounded-2xl rounded-tl-sm p-md">
                         <p className="text-body-md text-on-surface mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
+
+                        {/* Inline source chips */}
+                        {msg.sources && msg.sources.length > 0 && (
+                          <div className="mt-1 mb-3">
+                            <span className="text-caption text-on-surface-variant font-medium flex items-center gap-1 mb-2">
+                              <span className="material-symbols-outlined text-[14px] text-primary">menu_book</span>
+                              {t.sourcesLabel}
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {msg.sources.map((src, i) => (
+                                <span
+                                  key={i}
+                                  title={`Score: ${(src.score * 100).toFixed(0)}%`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-container/30 border border-primary/20 text-[11px] text-primary font-medium hover:bg-primary-container/60 transition-colors cursor-default"
+                                >
+                                  <span className="material-symbols-outlined text-[12px]">description</span>
+                                  {src.title || src.note_id.slice(0, 8)}
+                                  <span className="opacity-60 ml-0.5">{(src.score * 100).toFixed(0)}%</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No notes found hint */}
+                        {msg.noSources && (
+                          <div className="mt-1 mb-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-surface-variant/50 border border-outline-variant">
+                            <span className="material-symbols-outlined text-[16px] text-outline mt-0.5 flex-shrink-0">info</span>
+                            <p className="text-caption text-on-surface-variant leading-relaxed">{t.noSourcesMsg}</p>
+                          </div>
+                        )}
+
                         {msg.suggestions && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                             {msg.suggestions.map((s, i) => (

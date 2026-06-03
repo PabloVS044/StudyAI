@@ -4,7 +4,7 @@ import secrets
 import unicodedata
 from pathlib import Path
 from typing import Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse, Response
@@ -242,29 +242,17 @@ async def google_connect(user_id: str = Depends(get_current_user)):
     state = secrets.token_urlsafe(32)
     supabase_client.create_oauth_state(state, user_id, "google")
 
-    from google_auth_oauthlib.flow import Flow
-    client_config = {
-        "web": {
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email openid",
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+        "state": state,
     }
-    flow = Flow.from_client_config(
-        client_config,
-        scopes=["https://www.googleapis.com/auth/drive.file",
-                "https://www.googleapis.com/auth/userinfo.email",
-                "openid"],
-        redirect_uri=settings.GOOGLE_REDIRECT_URI,
-    )
-    auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
-        state=state,
-    )
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
     return {"auth_url": auth_url}
 
 

@@ -85,3 +85,23 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_note
     ON quiz_attempts (user_id, note_id);
+
+-- =============================================================================
+-- Notebooks (libros de notas: agrupan varias notas)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS notebooks (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id     TEXT        NOT NULL,
+    name        TEXT        NOT NULL,
+    description TEXT,
+    created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notebooks_user ON notebooks (user_id);
+
+-- Relacion nota -> notebook (una nota pertenece a 0 o 1 notebook)
+ALTER TABLE notes ADD COLUMN IF NOT EXISTS notebook_id BIGINT;
+
+-- Parciales: un intento puede estar asociado a un notebook
+ALTER TABLE quiz_attempts ADD COLUMN IF NOT EXISTS notebook_id BIGINT;

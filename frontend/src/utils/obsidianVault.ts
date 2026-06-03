@@ -37,11 +37,12 @@ async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
   });
 }
 
-export async function pickVaultFolder(): Promise<{ name: string }> {
-  const picker = (window as unknown as { showDirectoryPicker: (opts: object) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
-  const handle = await picker({ mode: "readwrite" });
+export async function pickVaultFolder(): Promise<{ handle: FileSystemDirectoryHandle; name: string }> {
+  const w = window as unknown as { showDirectoryPicker: (opts: object) => Promise<FileSystemDirectoryHandle> };
+  // Must call on window to preserve 'this' and keep the user-gesture token
+  const handle = await w.showDirectoryPicker({ mode: "readwrite" });
   await saveHandle(handle);
-  return { name: handle.name };
+  return { handle, name: handle.name };
 }
 
 type PermissionHandle = {
@@ -49,6 +50,23 @@ type PermissionHandle = {
   requestPermission(opts: { mode: string }): Promise<PermissionState>;
 };
 
+// checkVaultPermission: query only (no user gesture needed). Call on mount to restore state.
+export async function checkVaultPermission(): Promise<{ handle: FileSystemDirectoryHandle; name: string } | null> {
+  try {
+    const handle = await loadHandle();
+    if (!handle) return null;
+    const ph = handle as unknown as PermissionHandle;
+    const perm = await ph.queryPermission({ mode: "readwrite" });
+    if (perm === "granted") return { handle, name: handle.name };
+    // Permission is "prompt" or "denied" — restore name so UI shows the folder,
+    // but do not requestPermission here (needs a user gesture).
+    return { handle, name: handle.name };
+  } catch {
+    return null;
+  }
+}
+
+// getSavedVault: query + request permission. Must be called from a user-gesture handler.
 export async function getSavedVault(): Promise<{ handle: FileSystemDirectoryHandle; name: string } | null> {
   try {
     const handle = await loadHandle();
