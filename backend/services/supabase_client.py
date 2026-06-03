@@ -37,8 +37,9 @@ def get_note(note_id: str, user_id: Optional[str] = None) -> Optional[dict]:
     q = _client().table("notes").select("*").eq("note_id", note_id)
     if user_id:
         q = q.eq("user_id", user_id)
-    result = q.maybe_single().execute()
-    return result.data
+    result = q.limit(1).execute()
+    rows = result.data or []
+    return rows[0] if rows else None
 
 
 def list_notes(limit: int = 50, user_id: Optional[str] = None) -> list[dict]:
@@ -93,13 +94,14 @@ def pop_oauth_state(state: str) -> Optional[dict]:
         .table("oauth_states")
         .select("user_id, provider")
         .eq("state", state)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if not result.data:
+    rows = result.data or []
+    if not rows:
         return None
     _client().table("oauth_states").delete().eq("state", state).execute()
-    return result.data  # {"user_id": ..., "provider": ...}
+    return rows[0]  # {"user_id": ..., "provider": ...}
 
 
 # ---------------------------------------------------------------------------
@@ -122,10 +124,11 @@ def get_integration(user_id: str, provider: str) -> Optional[dict]:
         .select("*")
         .eq("user_id", user_id)
         .eq("provider", provider)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    return result.data
+    rows = result.data or []
+    return rows[0] if rows else None
 
 
 def update_integration(user_id: str, provider: str, **fields) -> None:
