@@ -2,6 +2,44 @@ import { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import { listNotes, generateSummary } from "../api/client";
 import type { NoteListItem, SummaryResponse } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    searchPlaceholder: "Buscar resumenes...",
+    notesTitle: "Notas",
+    loadingNotes: "Cargando notas...",
+    emptyNotes: "No hay notas disponibles.",
+    selectNote: "Selecciona una nota",
+    regenAriaLabel: "Regenerar resumen",
+    emptyState: "Selecciona una nota para ver su resumen.",
+    noSummary: "Esta nota no tiene resumen todavia.\nGenera uno con el boton de abajo.",
+    generating: "Generando resumen...",
+    keyConcepts: "Conceptos clave",
+    btnGenerating: "Generando...",
+    btnRegenerate: "Regenerar",
+    btnGenerate: "Generar resumen",
+    errorLoadNotes: "No se pudieron cargar las notas.",
+    errorGenerate: "Error al generar resumen.",
+  },
+  en: {
+    searchPlaceholder: "Search summaries...",
+    notesTitle: "Notes",
+    loadingNotes: "Loading notes...",
+    emptyNotes: "No notes available.",
+    selectNote: "Select a note",
+    regenAriaLabel: "Regenerate summary",
+    emptyState: "Select a note to view its summary.",
+    noSummary: "This note has no summary yet.\nGenerate one with the button below.",
+    generating: "Generating summary...",
+    keyConcepts: "Key concepts",
+    btnGenerating: "Generating...",
+    btnRegenerate: "Regenerate",
+    btnGenerate: "Generate summary",
+    errorLoadNotes: "Could not load notes.",
+    errorGenerate: "Error generating summary.",
+  },
+} as const;
 
 // Simple markdown renderer: handles #/##/### headings, **bold**, bullet lists, blank-line paragraphs
 function renderMarkdown(md: string): React.ReactNode[] {
@@ -74,6 +112,9 @@ function renderMarkdown(md: string): React.ReactNode[] {
 }
 
 export default function AISummariesPage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
+
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [selectedNote, setSelectedNote] = useState<NoteListItem | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
@@ -87,8 +128,9 @@ export default function AISummariesPage() {
         setNotes(data);
         if (data.length > 0) setSelectedNote(data[0]);
       })
-      .catch(() => setError("No se pudieron cargar las notas."))
+      .catch(() => setError(t.errorLoadNotes))
       .finally(() => setNotesLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSelectNote = (note: NoteListItem) => {
@@ -105,7 +147,7 @@ export default function AISummariesPage() {
       const res = await generateSummary({ note_ids: [selectedNote.note_id], style: "detailed" });
       setSummary(res);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error al generar resumen.");
+      setError(e instanceof Error ? e.message : t.errorGenerate);
     } finally {
       setGenerating(false);
     }
@@ -113,23 +155,23 @@ export default function AISummariesPage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search summaries..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 mt-16 ml-0 md:ml-64 flex h-[calc(100vh-4rem)] overflow-hidden">
         {/* Left Pane: Notes List */}
         <aside className="w-full md:w-80 lg:w-96 border-r border-outline-variant/30 flex flex-col bg-surface overflow-hidden hidden md:flex shrink-0">
           <div className="p-md flex flex-col gap-4 border-b border-outline-variant/30">
-            <h2 className="text-headline-md text-primary">Notas</h2>
+            <h2 className="text-headline-md text-primary">{t.notesTitle}</h2>
           </div>
 
           <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-2 custom-scrollbar">
             {notesLoading && (
               <div className="flex items-center gap-2 p-4 text-on-surface-variant text-sm">
                 <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                Cargando notas...
+                {t.loadingNotes}
               </div>
             )}
             {!notesLoading && notes.length === 0 && (
-              <p className="p-4 text-body-md text-on-surface-variant">No hay notas disponibles.</p>
+              <p className="p-4 text-body-md text-on-surface-variant">{t.emptyNotes}</p>
             )}
             {notes.map((note) => {
               const isActive = selectedNote?.note_id === note.note_id;
@@ -163,7 +205,7 @@ export default function AISummariesPage() {
             <div className="flex items-center gap-2 text-sm text-on-surface-variant min-w-0">
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
               <span className="font-medium text-caption">
-                {selectedNote ? selectedNote.title : "Selecciona una nota"}
+                {selectedNote ? selectedNote.title : t.selectNote}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -171,7 +213,7 @@ export default function AISummariesPage() {
                 onClick={handleGenerate}
                 disabled={!selectedNote || generating}
                 className="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-40"
-                aria-label="Regenerar resumen"
+                aria-label={t.regenAriaLabel}
               >
                 <span className={`material-symbols-outlined text-[20px] ${generating ? "animate-spin" : ""}`}>sync</span>
               </button>
@@ -201,7 +243,7 @@ export default function AISummariesPage() {
               {!selectedNote && !notesLoading && (
                 <div className="flex flex-col items-center justify-center py-24 text-on-surface-variant gap-4">
                   <span className="material-symbols-outlined text-[48px] opacity-30">summarize</span>
-                  <p className="text-body-lg">Selecciona una nota para ver su resumen.</p>
+                  <p className="text-body-lg">{t.emptyState}</p>
                 </div>
               )}
 
@@ -216,7 +258,7 @@ export default function AISummariesPage() {
               {selectedNote && !generating && !summary && !error && (
                 <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant gap-6">
                   <span className="material-symbols-outlined text-[48px] opacity-30">auto_awesome</span>
-                  <p className="text-body-lg text-center">Esta nota no tiene resumen todavia.<br />Genera uno con el boton de abajo.</p>
+                  <p className="text-body-lg text-center">{t.noSummary.split("\n").map((line, i) => i === 0 ? line : <><br key={i} />{line}</>)}</p>
                 </div>
               )}
 
@@ -224,7 +266,7 @@ export default function AISummariesPage() {
               {generating && (
                 <div className="flex items-center gap-3 py-12 text-on-surface-variant">
                   <span className="material-symbols-outlined text-[24px] animate-spin">progress_activity</span>
-                  <span className="text-body-lg">Generando resumen...</span>
+                  <span className="text-body-lg">{t.generating}</span>
                 </div>
               )}
 
@@ -248,7 +290,7 @@ export default function AISummariesPage() {
                     <div className="mt-6">
                       <h3 className="text-body-lg font-semibold text-on-surface mb-3 flex items-center gap-2">
                         <span className="material-symbols-outlined text-[18px] text-primary">label</span>
-                        Conceptos clave
+                        {t.keyConcepts}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {summary.key_concepts.map((concept, i) => (
@@ -277,7 +319,7 @@ export default function AISummariesPage() {
               <span className={`material-symbols-outlined text-[20px] text-primary ${generating ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`}>
                 {generating ? "progress_activity" : "sync"}
               </span>
-              <span className="text-label-md">{generating ? "Generando..." : summary ? "Regenerar" : "Generar resumen"}</span>
+              <span className="text-label-md">{generating ? t.btnGenerating : summary ? t.btnRegenerate : t.btnGenerate}</span>
             </button>
           </div>
         </section>

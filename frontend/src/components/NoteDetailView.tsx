@@ -6,6 +6,26 @@ import { imageUrl, saveNote } from "../api/client";
 import FormulaBlock from "./FormulaBlock";
 import IntegrationPanel from "./IntegrationPanel";
 import type { NoteContent } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    mainText: "Texto Principal",
+    formulas: "Fórmulas",
+    definitions: "Definiciones",
+    lists: "Listas",
+    diagrams: "Diagramas y Figuras",
+    observations: "Observaciones",
+  },
+  en: {
+    mainText: "Main Text",
+    formulas: "Formulas",
+    definitions: "Definitions",
+    lists: "Lists",
+    diagrams: "Diagrams & Figures",
+    observations: "Observations",
+  },
+} as const;
 
 interface Props {
   noteId: string;
@@ -31,6 +51,9 @@ export default function NoteDetailView({
   driveUrl,
   onSaved,
 }: Props) {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
+
   async function handleSave() {
     await saveNote({ note_id: noteId, filename, image_ext: imageExt, content });
     onSaved?.();
@@ -67,7 +90,7 @@ export default function NoteDetailView({
         <div className="space-y-5">
           {/* Texto principal */}
           {content.texto_principal && (
-            <Section label="Texto Principal" icon="📝">
+            <Section label={t.mainText} icon="📝">
               <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {content.texto_principal}
               </p>
@@ -76,7 +99,7 @@ export default function NoteDetailView({
 
           {/* Fórmulas */}
           {content.formulas?.length > 0 && (
-            <Section label="Fórmulas" icon="∑">
+            <Section label={t.formulas} icon="∑">
               {content.formulas.map((f, i) => (
                 <FormulaBlock
                   key={i}
@@ -90,7 +113,7 @@ export default function NoteDetailView({
 
           {/* Definiciones */}
           {content.definiciones?.length > 0 && (
-            <Section label="Definiciones" icon="📖">
+            <Section label={t.definitions} icon="📖">
               <div className="divide-y divide-slate-700/50">
                 {content.definiciones.map((d, i) => (
                   <div key={i} className="py-2 first:pt-0 last:pb-0">
@@ -104,7 +127,7 @@ export default function NoteDetailView({
 
           {/* Listas */}
           {content.listas?.length > 0 && (
-            <Section label="Listas" icon="📋">
+            <Section label={t.lists} icon="📋">
               {content.listas.map((lista, i) => (
                 <div key={i} className="mb-3 last:mb-0">
                   {lista.tipo === "numerada" ? (
@@ -123,7 +146,7 @@ export default function NoteDetailView({
 
           {/* Diagramas */}
           {content.diagramas_figuras?.length > 0 && (
-            <Section label="Diagramas y Figuras" icon="🖼">
+            <Section label={t.diagrams} icon="🖼">
               {content.diagramas_figuras.map((d, i) => (
                 <div key={i} className="callout-info rounded-lg px-4 py-3 mb-2 last:mb-0 text-sm text-slate-300 leading-relaxed">
                   🖼 {d.descripcion}
@@ -134,7 +157,7 @@ export default function NoteDetailView({
 
           {/* Observaciones */}
           {content.observaciones && (
-            <Section label="Observaciones" icon="💡">
+            <Section label={t.observations} icon="💡">
               <div className="callout-note rounded-lg px-4 py-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {content.observaciones}
               </div>
