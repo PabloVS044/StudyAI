@@ -4,8 +4,8 @@ import { UserButton } from "@clerk/react";
 import { useAppSettings } from "../context/AppSettings";
 
 const COPY = {
-  es: { search: "Buscar...", notifications: "Notificaciones" },
-  en: { search: "Search...", notifications: "Notifications" },
+  es: { search: "Buscar..." },
+  en: { search: "Search..." },
 } as const;
 
 export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: string }) {
@@ -56,12 +56,6 @@ export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: stri
           <span className="material-symbols-outlined">
             {theme === "light" ? "dark_mode" : "light_mode"}
           </span>
-        </button>
-        <button
-          className="text-on-surface-variant hover:bg-primary-container/10 rounded-full p-2 transition-all flex items-center justify-center"
-          title={t.notifications}
-        >
-          <span className="material-symbols-outlined">notifications</span>
         </button>
         <UserButton />
       </div>
