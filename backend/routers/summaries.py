@@ -96,7 +96,7 @@ def _parse_json_response(raw: str) -> dict:
         if raw.lstrip().startswith("json"):
             raw = raw.lstrip()[4:]
     raw = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", raw).strip()
-    raw = re.sub(r'\\(?!["\\/u])', r'\\\\', raw)  # escapa LaTeX invalido en JSON
+    raw = re.sub(r'\\(?!")', r'\\\\', raw)  # escapa LaTeX (\\ etc) invalido en JSON
     return json.loads(raw, strict=False)
 
 
