@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import TopBar from "../components/TopBar";
 import NoteCard from "../components/NoteCard";
 import Spinner from "../components/Spinner";
-import { listNotes } from "../api/client";
-import type { NoteListItem } from "../types/note";
+import { listNotes, listNotebooks } from "../api/client";
+import type { NoteListItem, Notebook } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
 
 const COPY = {
@@ -21,6 +21,9 @@ const COPY = {
     emptyNoNotesSub: "Sube fotos de tus apuntes en la sección de captura.",
     emptyNoMatch: "Ninguna nota coincide con tu filtro.",
     errorDefault: "Error al cargar notas",
+    allBooks: "Todos",
+    noBook: "Sin libro",
+    bookLabel: "Libro:",
   },
   en: {
     searchPlaceholder: "Search your library...",
@@ -36,22 +39,36 @@ const COPY = {
     emptyNoNotesSub: "Upload photos of your notes in the capture section.",
     emptyNoMatch: "No notes match your filter.",
     errorDefault: "Error loading notes",
+    allBooks: "All",
+    noBook: "No notebook",
+    bookLabel: "Notebook:",
   },
 } as const;
+
+// Sentinel values for the notebook selector
+const ALL_BOOKS = "__all__";
+const NO_BOOK = "__none__";
 
 export default function LibraryPage() {
   const { lang } = useAppSettings();
   const t = COPY[lang];
   const [notes, setNotes] = useState<NoteListItem[]>([]);
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [selectedBook, setSelectedBook] = useState<string>(ALL_BOOKS);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setNotes(await listNotes(100));
+      const [fetchedNotes, fetchedNotebooks] = await Promise.all([
+        listNotes(100),
+        listNotebooks(),
+      ]);
+      setNotes(fetchedNotes);
+      setNotebooks(fetchedNotebooks);
     } catch (e) {
       setError(e instanceof Error ? e.message : t.errorDefault);
     } finally {
@@ -61,13 +78,29 @@ export default function LibraryPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Notes filtered by selected notebook, then by text filter
+  const byBook: NoteListItem[] = (() => {
+    if (selectedBook === ALL_BOOKS) return notes;
+    if (selectedBook === NO_BOOK) return notes.filter((n) => !(n as any).notebook_id);
+    const nbId = Number(selectedBook);
+    return notes.filter((n) => (n as any).notebook_id === nbId);
+  })();
+
   const filtered = filter
-    ? notes.filter(
+    ? byBook.filter(
         (n) =>
           n.title.toLowerCase().includes(filter.toLowerCase()) ||
           n.text_preview.toLowerCase().includes(filter.toLowerCase())
       )
-    : notes;
+    : byBook;
+
+  // Label for the current section heading
+  const sectionLabel: string | null = (() => {
+    if (selectedBook === ALL_BOOKS) return null;
+    if (selectedBook === NO_BOOK) return t.noBook;
+    const nb = notebooks.find((nb) => nb.id === Number(selectedBook));
+    return nb ? nb.name : null;
+  })();
 
   return (
     <>
@@ -96,6 +129,38 @@ export default function LibraryPage() {
             </button>
           </div>
         </div>
+
+        {/* Notebook selector */}
+        {notebooks.length > 0 && (
+          <div className="mb-md flex flex-wrap items-center gap-2">
+            <span className="text-label-md text-on-surface-variant flex items-center gap-1 mr-1">
+              <span className="material-symbols-outlined text-[18px]">menu_book</span>
+              {t.bookLabel}
+            </span>
+            {[
+              { value: ALL_BOOKS, label: t.allBooks },
+              ...notebooks.map((nb) => ({ value: String(nb.id), label: nb.name })),
+              { value: NO_BOOK, label: t.noBook },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSelectedBook(value)}
+                className={`px-3 py-1.5 rounded-full text-label-sm border transition-colors ${
+                  selectedBook === value
+                    ? "bg-primary text-on-primary border-primary"
+                    : "bg-surface-container-lowest border-outline-variant text-on-surface-variant hover:bg-surface-container-low"
+                }`}
+              >
+                {label}
+                {value !== ALL_BOOKS && value !== NO_BOOK && notebooks.find((nb) => nb.id === Number(value))?.note_count != null && (
+                  <span className="ml-1 opacity-60 text-[11px]">
+                    ({notebooks.find((nb) => nb.id === Number(value))!.note_count})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search filter — shown when there are enough notes */}
         {notes.length > 4 && (
@@ -151,6 +216,18 @@ export default function LibraryPage() {
                 {t.emptyNoNotesSub}
               </p>
             )}
+          </div>
+        )}
+
+
+        {/* Section heading when a specific notebook is selected */}
+        {!loading && sectionLabel && filtered.length > 0 && (
+          <div className="mb-md flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px] text-primary">menu_book</span>
+            <h3 className="text-title-md text-on-background font-semibold">{sectionLabel}</h3>
+            <span className="text-body-sm text-on-surface-variant/60">
+              — {filtered.length} {filtered.length !== 1 ? t.notas : t.nota}
+            </span>
           </div>
         )}
 

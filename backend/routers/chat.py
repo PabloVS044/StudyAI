@@ -34,7 +34,8 @@ async def chat_rag(req: ChatRequest, user_id: str = Depends(get_current_user)):
                 settings.PINECONE_API_KEY,
                 settings.PINECONE_INDEX_NAME,
                 vector,
-                top_k=3
+                top_k=3,
+                namespace=user_id
             )
         except Exception:
             pass
