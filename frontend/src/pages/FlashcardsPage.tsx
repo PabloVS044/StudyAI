@@ -2,10 +2,73 @@ import { useEffect, useState } from "react";
 import TopBar from "../components/TopBar";
 import { listNotes, generateFlashcards } from "../api/client";
 import type { NoteListItem, Flashcard } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
 
 type Phase = "idle" | "loading" | "ready" | "error";
 
+const COPY = {
+  es: {
+    searchPlaceholder: "Buscar mazos, etiquetas o conceptos...",
+    activeStudy: "Estudio activo",
+    subtitle: "Selecciona una nota y genera tus flashcards.",
+    progress: "Progreso",
+    card: "Tarjeta",
+    of: "de",
+    note: "Nota",
+    chooseNote: "-- Elige una nota --",
+    generating: "Generando...",
+    generate: "Generar",
+    idleMsg: 'Selecciona una nota y pulsa "Generar".',
+    retryBtn: "Generar de todas formas",
+    emptyMsg: "No se generaron flashcards para esta nota.",
+    question: "Pregunta",
+    tapToFlip: "Toca para ver la respuesta",
+    answer: "Respuesta",
+    prev: "Anterior",
+    flipToQ: "Ver pregunta",
+    flipToA: "Ver respuesta",
+    next: "Siguiente",
+    regenerate: "Regenerar flashcards",
+    currentSession: "Sesion actual",
+    current: "Actual",
+    total: "Total",
+    allCards: "Todas las tarjetas",
+    errorDefault: "Error al generar flashcards.",
+  },
+  en: {
+    searchPlaceholder: "Search decks, tags, or concepts...",
+    activeStudy: "Active study",
+    subtitle: "Select a note and generate your flashcards.",
+    progress: "Progress",
+    card: "Card",
+    of: "of",
+    note: "Note",
+    chooseNote: "-- Choose a note --",
+    generating: "Generating...",
+    generate: "Generate",
+    idleMsg: 'Select a note and click "Generate".',
+    retryBtn: "Generate anyway",
+    emptyMsg: "No flashcards were generated for this note.",
+    question: "Question",
+    tapToFlip: "Tap to see the answer",
+    answer: "Answer",
+    prev: "Previous",
+    flipToQ: "See question",
+    flipToA: "See answer",
+    next: "Next",
+    regenerate: "Regenerate flashcards",
+    currentSession: "Current session",
+    current: "Current",
+    total: "Total",
+    allCards: "All cards",
+    errorDefault: "Error generating flashcards.",
+  },
+} as const;
+
 export default function FlashcardsPage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
+
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [selectedId, setSelectedId] = useState("");
@@ -38,7 +101,7 @@ export default function FlashcardsPage() {
     } catch (e) {
       setFlashcards([]);
       setPhase("error");
-      setErrMsg(e instanceof Error ? e.message : "Error al generar flashcards.");
+      setErrMsg(e instanceof Error ? e.message : t.errorDefault);
     }
   }
 
@@ -57,7 +120,7 @@ export default function FlashcardsPage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search decks, tags, or concepts..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 mt-16 p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64">
 
         {/* Header & note selector */}
@@ -67,15 +130,15 @@ export default function FlashcardsPage() {
               Flashcards
               <span className="bg-primary-container/10 text-primary text-caption px-sm py-xs rounded-full inline-flex items-center gap-xs">
                 <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>style</span>
-                Estudio activo
+                {t.activeStudy}
               </span>
             </h2>
-            <p className="text-caption text-outline mt-xs">Selecciona una nota y genera tus flashcards.</p>
+            <p className="text-caption text-outline mt-xs">{t.subtitle}</p>
           </div>
           {phase === "ready" && total > 0 && (
             <div className="text-right">
-              <p className="text-caption text-outline mb-xs">Progreso</p>
-              <p className="text-label-md text-on-surface-variant">Tarjeta {cardIndex + 1} de {total}</p>
+              <p className="text-caption text-outline mb-xs">{t.progress}</p>
+              <p className="text-label-md text-on-surface-variant">{t.card} {cardIndex + 1} {t.of} {total}</p>
             </div>
           )}
         </div>
@@ -83,7 +146,7 @@ export default function FlashcardsPage() {
         {/* Note selector panel */}
         <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md mb-gutter flex flex-col sm:flex-row gap-md items-end">
           <div className="flex-1">
-            <label className="block text-label-md text-on-surface mb-xs">Nota</label>
+            <label className="block text-label-md text-on-surface mb-xs">{t.note}</label>
             {notesLoading ? (
               <div className="h-10 bg-surface-container-low rounded-lg animate-pulse" />
             ) : (
@@ -92,7 +155,7 @@ export default function FlashcardsPage() {
                 onChange={(e) => { setSelectedId(e.target.value); setPhase("idle"); setFlashcards([]); }}
                 className="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
               >
-                <option value="">-- Elige una nota --</option>
+                <option value="">{t.chooseNote}</option>
                 {notes.map((n) => (
                   <option key={n.note_id} value={n.note_id}>{n.title || n.filename}</option>
                 ))}
@@ -108,12 +171,12 @@ export default function FlashcardsPage() {
               {phase === "loading" ? (
                 <>
                   <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                  Generando...
+                  {t.generating}
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-                  Generar
+                  {t.generate}
                 </>
               )}
             </button>
@@ -124,7 +187,7 @@ export default function FlashcardsPage() {
         {phase === "idle" && (
           <div className="flex flex-col items-center justify-center py-2xl text-center text-outline">
             <span className="material-symbols-outlined text-[48px] mb-md opacity-30">style</span>
-            <p className="text-body-lg">Selecciona una nota y pulsa "Generar".</p>
+            <p className="text-body-lg">{t.idleMsg}</p>
           </div>
         )}
 
@@ -134,7 +197,7 @@ export default function FlashcardsPage() {
             <p className="text-body-md">{errMsg}</p>
             <button onClick={handleGenerate} className="mt-md px-md py-sm rounded-lg bg-primary text-on-primary text-label-md hover:opacity-90 transition-all inline-flex items-center gap-xs">
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-              Generar de todas formas
+              {t.retryBtn}
             </button>
           </div>
         )}
@@ -142,7 +205,7 @@ export default function FlashcardsPage() {
         {phase === "ready" && total === 0 && (
           <div className="flex flex-col items-center justify-center py-2xl text-center text-outline">
             <span className="material-symbols-outlined text-[48px] mb-md opacity-30">inbox</span>
-            <p className="text-body-lg">No se generaron flashcards para esta nota.</p>
+            <p className="text-body-lg">{t.emptyMsg}</p>
           </div>
         )}
 
@@ -163,22 +226,22 @@ export default function FlashcardsPage() {
                 >
                   {!flipped ? (
                     <div className="mb-lg w-full">
-                      <span className="text-caption text-outline tracking-wider uppercase mb-md block">Pregunta</span>
+                      <span className="text-caption text-outline tracking-wider uppercase mb-md block">{t.question}</span>
                       <h3 className="text-headline-md text-on-surface max-w-2xl mx-auto leading-snug">
                         {current.pregunta}
                       </h3>
-                      <p className="text-caption text-outline mt-lg opacity-60">Toca para ver la respuesta</p>
+                      <p className="text-caption text-outline mt-lg opacity-60">{t.tapToFlip}</p>
                     </div>
                   ) : (
                     <>
                       <div className="mb-lg w-full">
-                        <span className="text-caption text-outline tracking-wider uppercase mb-md block">Pregunta</span>
+                        <span className="text-caption text-outline tracking-wider uppercase mb-md block">{t.question}</span>
                         <p className="text-body-md text-on-surface-variant max-w-2xl mx-auto">{current.pregunta}</p>
                       </div>
 
                       {/* Divider */}
                       <div className="w-full h-px bg-outline-variant/30 my-lg relative">
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-3 bg-surface px-sm text-caption text-outline">Respuesta</div>
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-3 bg-surface px-sm text-caption text-outline">{t.answer}</div>
                       </div>
 
                       {/* Answer */}
@@ -197,7 +260,7 @@ export default function FlashcardsPage() {
                     className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors text-label-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-                    Anterior
+                    {t.prev}
                   </button>
 
                   <button
@@ -205,7 +268,7 @@ export default function FlashcardsPage() {
                     className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high transition-colors text-label-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">flip</span>
-                    {flipped ? "Ver pregunta" : "Ver respuesta"}
+                    {flipped ? t.flipToQ : t.flipToA}
                   </button>
 
                   <button
@@ -213,7 +276,7 @@ export default function FlashcardsPage() {
                     disabled={cardIndex === total - 1}
                     className="flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary shadow-sm hover:opacity-90 disabled:opacity-30 transition-all text-label-md"
                   >
-                    Siguiente
+                    {t.next}
                     <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                   </button>
                 </div>
@@ -225,7 +288,7 @@ export default function FlashcardsPage() {
                   className="text-label-md text-outline hover:text-primary flex items-center gap-xs mx-auto transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  Regenerar flashcards
+                  {t.regenerate}
                 </button>
               </div>
             </div>
@@ -236,11 +299,11 @@ export default function FlashcardsPage() {
               <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
                 <h3 className="text-label-md text-on-surface mb-md flex items-center gap-sm">
                   <span className="material-symbols-outlined text-secondary">monitoring</span>
-                  Sesion actual
+                  {t.currentSession}
                 </h3>
                 <div className="mb-lg">
                   <div className="flex justify-between text-caption text-outline mb-xs">
-                    <span>Progreso</span>
+                    <span>{t.progress}</span>
                     <span className="text-primary font-bold">{Math.round(progressPercent)}%</span>
                   </div>
                   <div className="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
@@ -250,18 +313,18 @@ export default function FlashcardsPage() {
                 <div className="grid grid-cols-2 gap-sm">
                   <div className="bg-primary-container/5 rounded-lg p-sm text-center border border-primary-container/10">
                     <span className="block text-headline-md text-primary">{cardIndex + 1}</span>
-                    <span className="text-caption text-outline">Actual</span>
+                    <span className="text-caption text-outline">{t.current}</span>
                   </div>
                   <div className="bg-surface-container rounded-lg p-sm text-center border border-outline-variant/20">
                     <span className="block text-headline-md text-secondary">{total}</span>
-                    <span className="text-caption text-outline">Total</span>
+                    <span className="text-caption text-outline">{t.total}</span>
                   </div>
                 </div>
               </div>
 
               {/* Card list */}
               <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm flex-1 p-md flex flex-col">
-                <h3 className="text-label-md text-on-surface mb-md">Todas las tarjetas</h3>
+                <h3 className="text-label-md text-on-surface mb-md">{t.allCards}</h3>
                 <div className="flex-1 space-y-xs overflow-y-auto pr-sm custom-scrollbar max-h-[340px]">
                   {flashcards.map((fc, i) => (
                     <button

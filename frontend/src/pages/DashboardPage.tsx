@@ -3,6 +3,66 @@ import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import { listNotes } from "../api/client";
 import type { NoteListItem } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    searchPlaceholder: "Buscar notas, conceptos o resúmenes...",
+    welcome: "Bienvenido.",
+    overview: "Aquí hay un resumen de tu paisaje cognitivo hoy.",
+    statTotal: "Total de Notas",
+    statTotalSub: "capturadas",
+    statWeek: "Esta Semana",
+    statWeekSub: "notas añadidas",
+    statFormulas: "Con Fórmulas",
+    statSub: "notas",
+    statDiagrams: "Con Diagramas",
+    recentNotes: "Notas Recientes",
+    viewLibrary: "Ver Biblioteca",
+    loading: "Cargando notas...",
+    empty: "Aún no hay notas. Empieza capturando tu primera nota.",
+    newCapture: "Nueva captura",
+    formulas: "Fórmulas",
+    diagrams: "Diagramas",
+    open: "Abrir",
+    cognitiveFlow: "El Flujo Cognitivo",
+    cognitiveDesc: "Cómo tus notas se transforman en conocimiento.",
+    stepCapture: "Capturar",
+    stepExtract: "Extraer",
+    stepOrganize: "Organizar",
+    stepStudy: "Estudio Activo",
+    stepExport: "Exportar",
+    currentPhase: "Fase Actual",
+  },
+  en: {
+    searchPlaceholder: "Search notes, concepts, or summaries...",
+    welcome: "Welcome back.",
+    overview: "Here is an overview of your cognitive landscape today.",
+    statTotal: "Total Notes",
+    statTotalSub: "captured",
+    statWeek: "This Week",
+    statWeekSub: "notes added",
+    statFormulas: "With Formulas",
+    statSub: "notes",
+    statDiagrams: "With Diagrams",
+    recentNotes: "Recent Notes",
+    viewLibrary: "View Library",
+    loading: "Loading notes...",
+    empty: "No notes yet. Start by capturing your first note.",
+    newCapture: "New capture",
+    formulas: "Formulas",
+    diagrams: "Diagrams",
+    open: "Open",
+    cognitiveFlow: "The Cognitive Flow",
+    cognitiveDesc: "How your notes transform into knowledge.",
+    stepCapture: "Capture",
+    stepExtract: "Extract",
+    stepOrganize: "Organize",
+    stepStudy: "Active Study",
+    stepExport: "Export",
+    currentPhase: "Current Phase",
+  },
+} as const;
 
 function thisWeekCount(notes: NoteListItem[]): number {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -17,6 +77,8 @@ function formatDate(dateStr: string | null | undefined): string {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,23 +101,23 @@ export default function DashboardPage() {
   const thisWeek = thisWeekCount(notes);
 
   const statCards = [
-    { label: "Total Notes", value: String(totalNotes), sublabel: "captured", icon: "document_scanner", color: "text-primary" },
-    { label: "This Week", value: String(thisWeek), sublabel: "notes added", icon: "calendar_today", color: "text-secondary" },
-    { label: "With Formulas", value: String(withFormulas), sublabel: "notes", icon: "functions", color: "text-tertiary" },
-    { label: "With Diagrams", value: String(withDiagrams), sublabel: "notes", icon: "schema", color: "text-primary" },
+    { label: t.statTotal, value: String(totalNotes), sublabel: t.statTotalSub, icon: "document_scanner", color: "text-primary" },
+    { label: t.statWeek, value: String(thisWeek), sublabel: t.statWeekSub, icon: "calendar_today", color: "text-secondary" },
+    { label: t.statFormulas, value: String(withFormulas), sublabel: t.statSub, icon: "functions", color: "text-tertiary" },
+    { label: t.statDiagrams, value: String(withDiagrams), sublabel: t.statSub, icon: "schema", color: "text-primary" },
   ];
 
   const recentNotes = notes.slice(0, 6);
 
   return (
     <>
-      <TopBar searchPlaceholder="Search notes, concepts, or summaries..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 mt-16 p-gutter pb-xl overflow-y-auto">
         <div className="max-w-container-max mx-auto">
           {/* Welcome Header */}
           <header className="mb-lg">
-            <h2 className="text-display-lg text-primary mb-2">Welcome back.</h2>
-            <p className="text-body-lg text-on-surface-variant">Here is an overview of your cognitive landscape today.</p>
+            <h2 className="text-display-lg text-primary mb-2">{t.welcome}</h2>
+            <p className="text-body-lg text-on-surface-variant">{t.overview}</p>
           </header>
 
           {/* Bento Stats Grid */}
@@ -85,19 +147,19 @@ export default function DashboardPage() {
             {/* Recent Notes */}
             <section className="xl:col-span-2">
               <div className="flex justify-between items-end mb-md border-b border-outline-variant/30 pb-2">
-                <h3 className="text-headline-md text-on-surface">Recent Notes</h3>
+                <h3 className="text-headline-md text-on-surface">{t.recentNotes}</h3>
                 <button
                   onClick={() => navigate("/library")}
                   className="text-label-md text-primary hover:text-primary-container transition-colors flex items-center gap-1 bg-transparent border-none cursor-pointer"
                 >
-                  View Library <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                  {t.viewLibrary} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
               </div>
 
               {loading && (
                 <div className="flex items-center justify-center h-40 text-on-surface-variant text-body-md">
                   <span className="material-symbols-outlined animate-spin mr-2">progress_activity</span>
-                  Loading notes...
+                  {t.loading}
                 </div>
               )}
 
@@ -111,13 +173,13 @@ export default function DashboardPage() {
               {!loading && !error && totalNotes === 0 && (
                 <div className="flex flex-col items-center justify-center h-48 text-center gap-4">
                   <span className="material-symbols-outlined text-[48px] text-on-surface-variant opacity-40" style={{ fontVariationSettings: "'FILL' 1" }}>note_stack</span>
-                  <p className="text-body-lg text-on-surface-variant">No notes yet. Start by capturing your first note.</p>
+                  <p className="text-body-lg text-on-surface-variant">{t.empty}</p>
                   <button
                     onClick={() => navigate("/capture")}
                     className="bg-primary text-on-primary px-6 py-2 rounded-full text-label-md hover:bg-primary/90 transition-colors flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-                    Nueva captura
+                    {t.newCapture}
                   </button>
                 </div>
               )}
@@ -149,16 +211,16 @@ export default function DashboardPage() {
                         <div className="mt-auto flex items-center gap-2 flex-wrap">
                           {note.has_formulas && (
                             <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[12px]">functions</span>Formulas
+                              <span className="material-symbols-outlined text-[12px]">functions</span>{t.formulas}
                             </span>
                           )}
                           {note.has_diagrams && (
                             <span className="px-2 py-1 bg-tertiary/10 text-tertiary rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[12px]">schema</span>Diagrams
+                              <span className="material-symbols-outlined text-[12px]">schema</span>{t.diagrams}
                             </span>
                           )}
                           <span className="ml-auto text-label-md text-primary group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                            Open <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                            {t.open} <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                           </span>
                         </div>
                       </div>
@@ -171,16 +233,16 @@ export default function DashboardPage() {
             {/* Cognitive Flow Widget */}
             <section className="xl:col-span-1">
               <div className="bg-surface-container-low rounded-[24px] p-md border border-outline-variant/30 h-full flex flex-col">
-                <h3 className="text-headline-md text-on-surface mb-2">The Cognitive Flow</h3>
-                <p className="text-caption text-on-surface-variant mb-6">How your notes transform into knowledge.</p>
+                <h3 className="text-headline-md text-on-surface mb-2">{t.cognitiveFlow}</h3>
+                <p className="text-caption text-on-surface-variant mb-6">{t.cognitiveDesc}</p>
                 <div className="flex-1 flex flex-col justify-between py-4 relative">
                   <div className="absolute left-6 top-8 bottom-8 w-[2px] bg-outline-variant/30 z-0" />
                   {[
-                    { label: "Capture", icon: "add_a_photo" },
-                    { label: "Extract", icon: "auto_awesome" },
-                    { label: "Organize", icon: "folder_open" },
-                    { label: "Study Active", icon: "psychology", active: true },
-                    { label: "Export", icon: "ios_share" },
+                    { label: t.stepCapture, icon: "add_a_photo" },
+                    { label: t.stepExtract, icon: "auto_awesome" },
+                    { label: t.stepOrganize, icon: "folder_open" },
+                    { label: t.stepStudy, icon: "psychology", active: true },
+                    { label: t.stepExport, icon: "ios_share" },
                   ].map((step, i) => (
                     <div key={i} className={`flex items-start gap-4 relative z-10 group cursor-pointer ${i > 0 ? "mt-4" : ""} ${step.active ? "" : "opacity-50 hover:opacity-100 transition-opacity"}`}>
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -192,7 +254,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="pt-3">
                         <h5 className={`text-label-md ${step.active ? "text-primary" : "text-on-surface"}`}>{step.label}</h5>
-                        {step.active && <span className="text-[10px] text-primary-container font-medium uppercase tracking-wide">Current Phase</span>}
+                        {step.active && <span className="text-[10px] text-primary-container font-medium uppercase tracking-wide">{t.currentPhase}</span>}
                       </div>
                     </div>
                   ))}

@@ -9,6 +9,22 @@ import Modal from "./Modal";
 import NoteDetailView from "./NoteDetailView";
 import Spinner from "./Spinner";
 import type { NoteDetail, NoteListItem } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    formulas: "Fórmulas",
+    diagrams: "Diagramas",
+    errorLoad: "Error al cargar la nota.",
+    confirmDelete: (title: string) => `¿Eliminar "${title}"?`,
+  },
+  en: {
+    formulas: "Formulas",
+    diagrams: "Diagrams",
+    errorLoad: "Error loading the note.",
+    confirmDelete: (title: string) => `Delete "${title}"?`,
+  },
+} as const;
 
 interface Props {
   note: NoteListItem;
@@ -16,6 +32,8 @@ interface Props {
 }
 
 export default function NoteCard({ note, onDeleted }: Props) {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -35,7 +53,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm(`¿Eliminar "${note.title}"?`)) return;
+    if (!confirm(t.confirmDelete(note.title))) return;
     setDeleting(true);
     await deleteNote(note.note_id).catch(() => {});
     onDeleted();
@@ -74,10 +92,10 @@ export default function NoteCard({ note, onDeleted }: Props) {
           {/* Badges */}
           <div className="flex gap-1.5 mt-2 flex-wrap">
             {note.has_formulas && (
-              <Badge icon={<FlaskConical size={10} />} label="Fórmulas" />
+              <Badge icon={<FlaskConical size={10} />} label={t.formulas} />
             )}
             {note.has_diagrams && (
-              <Badge icon={<Network size={10} />} label="Diagramas" />
+              <Badge icon={<Network size={10} />} label={t.diagrams} />
             )}
             {note.tags?.map((tag) => (
               <Badge key={tag} icon={null} label={tag} color="teal" />
@@ -132,7 +150,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
             driveUrl={detail.drive_url}
           />
         ) : (
-          <p className="text-slate-400 text-sm">Error al cargar la nota.</p>
+          <p className="text-slate-400 text-sm">{t.errorLoad}</p>
         )}
       </Modal>
     </>

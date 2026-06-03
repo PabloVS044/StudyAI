@@ -4,8 +4,44 @@ import NoteCard from "../components/NoteCard";
 import Spinner from "../components/Spinner";
 import { listNotes } from "../api/client";
 import type { NoteListItem } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    searchPlaceholder: "Buscar en tu biblioteca...",
+    title: "Biblioteca",
+    subtitle: "Tus documentos procesados, apuntes de clase y materiales capturados organizados para una concentración profunda.",
+    nota: "nota",
+    notas: "notas",
+    refresh: "Actualizar",
+    filterLabel: "Filtrar:",
+    filterPlaceholder: "Filtrar por título o contenido...",
+    clear: "Limpiar",
+    emptyNoNotes: "Aún no hay notas guardadas.",
+    emptyNoNotesSub: "Sube fotos de tus apuntes en la sección de captura.",
+    emptyNoMatch: "Ninguna nota coincide con tu filtro.",
+    errorDefault: "Error al cargar notas",
+  },
+  en: {
+    searchPlaceholder: "Search your library...",
+    title: "Library",
+    subtitle: "Your processed documents, lecture notes, and captured materials organized for deep focus.",
+    nota: "note",
+    notas: "notes",
+    refresh: "Refresh",
+    filterLabel: "Filter:",
+    filterPlaceholder: "Filter by title or content...",
+    clear: "Clear",
+    emptyNoNotes: "No notes saved yet.",
+    emptyNoNotesSub: "Upload photos of your notes in the capture section.",
+    emptyNoMatch: "No notes match your filter.",
+    errorDefault: "Error loading notes",
+  },
+} as const;
 
 export default function LibraryPage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const [notes, setNotes] = useState<NoteListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,7 +53,7 @@ export default function LibraryPage() {
     try {
       setNotes(await listNotes(100));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cargar notas");
+      setError(e instanceof Error ? e.message : t.errorDefault);
     } finally {
       setLoading(false);
     }
@@ -35,16 +71,16 @@ export default function LibraryPage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search your library..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-container-max w-full mx-auto overflow-y-auto">
         <div className="mb-lg flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-display-lg text-on-background mb-2">Library</h2>
+            <h2 className="text-display-lg text-on-background mb-2">{t.title}</h2>
             <p className="text-body-lg text-on-surface-variant max-w-2xl">
-              Your processed documents, lecture notes, and captured materials organized for deep focus.
+              {t.subtitle}
               {!loading && notes.length > 0 && (
                 <span className="ml-2 text-on-surface-variant/60">
-                  ({notes.length} nota{notes.length !== 1 ? "s" : ""})
+                  ({notes.length} {notes.length !== 1 ? t.notas : t.nota})
                 </span>
               )}
             </p>
@@ -56,7 +92,7 @@ export default function LibraryPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low transition-colors disabled:opacity-50"
             >
               <span className={`material-symbols-outlined text-[20px] ${loading ? "animate-spin" : ""}`}>refresh</span>
-              <span className="text-label-md">Refresh</span>
+              <span className="text-label-md">{t.refresh}</span>
             </button>
           </div>
         </div>
@@ -66,13 +102,13 @@ export default function LibraryPage() {
           <div className="mb-lg bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-4 shadow-sm flex flex-wrap items-center gap-4">
             <div className="text-label-md text-on-surface-variant flex items-center gap-2 mr-2">
               <span className="material-symbols-outlined text-[20px]">filter_list</span>
-              Filter:
+              {t.filterLabel}
             </div>
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <span className="material-symbols-outlined text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">search</span>
               <input
                 type="text"
-                placeholder="Filter by title or content..."
+                placeholder={t.filterPlaceholder}
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 className="w-full bg-surface border border-outline-variant rounded-lg pl-9 pr-4 py-2 text-label-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary"
@@ -83,7 +119,7 @@ export default function LibraryPage() {
                 onClick={() => setFilter("")}
                 className="text-caption text-primary hover:underline"
               >
-                Clear
+                {t.clear}
               </button>
             )}
           </div>
@@ -108,13 +144,11 @@ export default function LibraryPage() {
           <div className="text-center py-24 text-on-surface-variant">
             <span className="material-symbols-outlined text-[56px] opacity-20 block mx-auto mb-4">auto_stories</span>
             <p className="text-body-lg">
-              {notes.length === 0
-                ? "No notes saved yet."
-                : "No notes match your filter."}
+              {notes.length === 0 ? t.emptyNoNotes : t.emptyNoMatch}
             </p>
             {notes.length === 0 && (
               <p className="text-body-md text-on-surface-variant/60 mt-1">
-                Upload photos of your notes in the capture section.
+                {t.emptyNoNotesSub}
               </p>
             )}
           </div>

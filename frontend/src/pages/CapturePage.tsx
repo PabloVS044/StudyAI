@@ -5,19 +5,66 @@ import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
 import { extractImages, saveNote } from "../api/client";
 import type { ExtractResult } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"]);
 
-const inputTypes = [
-  { icon: "document_scanner", label: "Foto de Apunte", action: "camera" },
-  { icon: "draw", label: "Nota en Tablet", action: "file" },
-  { icon: "picture_as_pdf", label: "Documento PDF", action: "file" },
-  { icon: "description", label: "Documento Word", action: "file" },
-  { icon: "mic", label: "Audio de Clase", action: null },
-  { icon: "text_fields", label: "Texto Manual", action: null },
-];
+const COPY = {
+  es: {
+    searchPlaceholder: "Buscar...",
+    pageTitle: "Añadir Material de Estudio",
+    pageSubtitle: "Sube tus archivos o elige un método de captura para comenzar el análisis.",
+    dropTitle: "Arrastra y suelta archivos aquí",
+    dropSub: "o haz clic para explorar tu dispositivo",
+    dropFormats: "Formatos aceptados: JPG, PNG, WEBP (Máx. 100MB)",
+    selectedFiles: "Archivos seleccionados",
+    divider: "O selecciona una fuente",
+    aiTitle: "Magia del flujo de estudio",
+    aiDesc: "La IA extraerá conceptos, limpiará el texto y organizará tus apuntes automáticamente.",
+    processBtn: "Procesar con IA",
+    processing: "Procesando con IA…",
+    results: "Resultados",
+    openCamera: "Abrir cámara",
+    errorDefault: "Error al conectar con el backend",
+    inputTypes: [
+      { icon: "document_scanner", label: "Foto de Apunte", action: "camera" },
+      { icon: "draw", label: "Nota en Tablet", action: "file" },
+      { icon: "picture_as_pdf", label: "Documento PDF", action: "file" },
+      { icon: "description", label: "Documento Word", action: "file" },
+      { icon: "mic", label: "Audio de Clase", action: null },
+      { icon: "text_fields", label: "Texto Manual", action: null },
+    ],
+  },
+  en: {
+    searchPlaceholder: "Search...",
+    pageTitle: "Add Study Material",
+    pageSubtitle: "Upload your files or choose a capture method to start the analysis.",
+    dropTitle: "Drag and drop files here",
+    dropSub: "or click to browse your device",
+    dropFormats: "Accepted formats: JPG, PNG, WEBP (Max. 100MB)",
+    selectedFiles: "Selected files",
+    divider: "Or select a source",
+    aiTitle: "Study flow magic",
+    aiDesc: "AI will extract concepts, clean the text and organize your notes automatically.",
+    processBtn: "Process with AI",
+    processing: "Processing with AI…",
+    results: "Results",
+    openCamera: "Open camera",
+    errorDefault: "Error connecting to backend",
+    inputTypes: [
+      { icon: "document_scanner", label: "Note Photo", action: "camera" },
+      { icon: "draw", label: "Tablet Note", action: "file" },
+      { icon: "picture_as_pdf", label: "PDF Document", action: "file" },
+      { icon: "description", label: "Word Document", action: "file" },
+      { icon: "mic", label: "Class Audio", action: null },
+      { icon: "text_fields", label: "Manual Text", action: null },
+    ],
+  },
+} as const;
 
 export default function CapturePage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [showCamera, setShowCamera] = useState(false);
@@ -80,7 +127,7 @@ export default function CapturePage() {
       );
       setSavedIds(autoSaved);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al conectar con el backend");
+      setError(e instanceof Error ? e.message : t.errorDefault);
     } finally {
       setExtracting(false);
     }
@@ -88,14 +135,14 @@ export default function CapturePage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="ml-0 md:ml-64 mt-16 w-full p-lg lg:p-xl flex justify-center bg-background">
         <div className="max-w-4xl w-full flex flex-col gap-lg pb-xl">
 
           {/* Header */}
           <div className="flex flex-col gap-xs">
-            <h2 className="text-headline-lg text-primary">Añadir Material de Estudio</h2>
-            <p className="text-body-lg text-on-surface-variant">Sube tus archivos o elige un método de captura para comenzar el análisis.</p>
+            <h2 className="text-headline-lg text-primary">{t.pageTitle}</h2>
+            <p className="text-body-lg text-on-surface-variant">{t.pageSubtitle}</p>
           </div>
 
           {/* Drop Zone */}
@@ -123,17 +170,17 @@ export default function CapturePage() {
                 <span className="material-symbols-outlined text-[32px]">cloud_upload</span>
               </div>
               <div className="text-center">
-                <h3 className="text-headline-md text-on-surface mb-xs">Arrastra y suelta archivos aquí</h3>
-                <p className="text-body-md text-on-surface-variant">o haz clic para explorar tu dispositivo</p>
+                <h3 className="text-headline-md text-on-surface mb-xs">{t.dropTitle}</h3>
+                <p className="text-body-md text-on-surface-variant">{t.dropSub}</p>
               </div>
-              <p className="text-caption text-on-surface-variant/70 mt-sm">Formatos aceptados: JPG, PNG, WEBP (Máx. 100MB)</p>
+              <p className="text-caption text-on-surface-variant/70 mt-sm">{t.dropFormats}</p>
             </label>
           </div>
 
           {/* Selected files */}
           {files.length > 0 && (
             <div className="bg-surface-container-lowest rounded-lg border border-outline-variant/30 p-md">
-              <h4 className="text-label-md text-on-surface mb-sm">Archivos seleccionados ({files.length})</h4>
+              <h4 className="text-label-md text-on-surface mb-sm">{t.selectedFiles} ({files.length})</h4>
               <ul className="space-y-xs">
                 {files.map((f, i) => (
                   <li key={i} className="flex items-center gap-sm text-body-md text-on-surface-variant">
@@ -149,13 +196,13 @@ export default function CapturePage() {
           {/* Divider */}
           <div className="flex items-center gap-md">
             <div className="h-px bg-outline-variant flex-grow" />
-            <span className="text-label-md text-on-surface-variant">O selecciona una fuente</span>
+            <span className="text-label-md text-on-surface-variant">{t.divider}</span>
             <div className="h-px bg-outline-variant flex-grow" />
           </div>
 
           {/* Input Types Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-md">
-            {inputTypes.map((type, i) => (
+            {t.inputTypes.map((type, i) => (
               <button
                 key={i}
                 onClick={() => handleCardClick(type.action)}
@@ -177,7 +224,7 @@ export default function CapturePage() {
                 </div>
                 <span className="text-label-md text-on-surface">{type.label}</span>
                 {type.action === "camera" && (
-                  <span className="text-caption text-primary">Abrir cámara</span>
+                  <span className="text-caption text-primary">{t.openCamera}</span>
                 )}
               </button>
             ))}
@@ -187,8 +234,8 @@ export default function CapturePage() {
           <div className="bg-secondary-container/30 border border-secondary-fixed-dim rounded-lg p-md flex items-start gap-md">
             <span className="material-symbols-outlined text-primary mt-xs">auto_awesome</span>
             <div>
-              <h4 className="text-label-md text-on-surface mb-xs">Magia del flujo de estudio</h4>
-              <p className="text-body-md text-on-surface-variant">La IA extraerá conceptos, limpiará el texto y organizará tus apuntes automáticamente.</p>
+              <h4 className="text-label-md text-on-surface mb-xs">{t.aiTitle}</h4>
+              <p className="text-body-md text-on-surface-variant">{t.aiDesc}</p>
             </div>
           </div>
 
@@ -207,7 +254,7 @@ export default function CapturePage() {
               className="bg-primary text-on-primary font-label-md text-label-md px-xl py-md rounded-full hover:bg-primary-container transition-colors shadow-sm flex items-center gap-sm text-lg disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {extracting && <Spinner size={20} />}
-              {extracting ? "Procesando con IA…" : "Procesar con IA"}
+              {extracting ? t.processing : t.processBtn}
               {!extracting && <span className="material-symbols-outlined">arrow_forward</span>}
             </button>
           </div>
@@ -215,7 +262,7 @@ export default function CapturePage() {
           {/* Results */}
           {results.length > 0 && (
             <div className="space-y-lg">
-              <h2 className="text-headline-md text-on-surface">Resultados ({results.length})</h2>
+              <h2 className="text-headline-md text-on-surface">{t.results} ({results.length})</h2>
               {results.map((r) => (
                 <div key={r.note_id} className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-lg">
                   <NoteDetailView

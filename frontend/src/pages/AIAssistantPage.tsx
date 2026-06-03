@@ -1,6 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import { chatRag } from "../api/client";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    pageTitle: "Asistente IA",
+    pageSubtitle: "Tu tutor académico integrado. Pregunta cualquier cosa sobre tus materiales.",
+    contextAll: "Contexto: Todas las notas",
+    contextNotebook: "Contexto: StudyAI Notebook",
+    welcomeMsg: "¡Hola! Soy tu asistente de estudio inteligente de StudyAI. Tengo acceso a todos tus apuntes digitalizados y puedo ayudarte a resolver dudas, resumir conceptos complejos o repasar tus temas. ¿Sobre qué te gustaría estudiar hoy?",
+    sug1Title: "Explica la diferencia entre sinapsis química y eléctrica",
+    sug1Desc: "Neurobiología clásica",
+    sug2Title: "Genérame preguntas de práctica",
+    sug2Desc: "Auto-evaluación rápida",
+    sug3Title: "Resume los puntos clave de mis apuntes",
+    sug3Desc: "Análisis semántico de notas",
+    loading: "StudyAI está analizando tus apuntes y redactando la respuesta...",
+    placeholder: "Escribe tus dudas, pide resúmenes o consulta sobre tus apuntes...",
+    disclaimer: "StudyAI puede cometer errores. Considera verificar la información importante.",
+    refsTitle: "Referencias activas",
+    refsSubtitle: "Fuentes usadas en esta conversación",
+    noRefs: "No hay referencias activas.",
+    noRefsHint: "Las referencias aparecerán aquí cuando StudyAI consulte tus apuntes.",
+    scoreLabel: "Coincidencia semántica con score de:",
+    tagNote: "Nota",
+    errorPrefix: "Error al obtener respuesta del asistente:",
+    searchPlaceholder: "Buscar en tus notas...",
+  },
+  en: {
+    pageTitle: "AI Assistant",
+    pageSubtitle: "Your integrated academic tutor. Ask anything about your materials.",
+    contextAll: "Context: All Notes",
+    contextNotebook: "Context: StudyAI Notebook",
+    welcomeMsg: "Hello! I'm your StudyAI intelligent study assistant. I have access to all your digitized notes and can help you resolve doubts, summarize complex concepts, or review your topics. What would you like to study today?",
+    sug1Title: "Explain the difference between chemical and electrical synapses",
+    sug1Desc: "Classical neurobiology",
+    sug2Title: "Generate practice questions for me",
+    sug2Desc: "Quick self-assessment",
+    sug3Title: "Summarize the key points of my notes",
+    sug3Desc: "Semantic analysis of notes",
+    loading: "StudyAI is analyzing your notes and drafting the response...",
+    placeholder: "Ask your questions, request summaries, or query your notes...",
+    disclaimer: "StudyAI can make mistakes. Consider verifying important information.",
+    refsTitle: "Active References",
+    refsSubtitle: "Sources used in this conversation",
+    noRefs: "No active references.",
+    noRefsHint: "References will appear here when StudyAI consults your notes.",
+    scoreLabel: "Semantic match with score:",
+    tagNote: "Note",
+    errorPrefix: "Error getting response from assistant:",
+    searchPlaceholder: "Search across your notes...",
+  },
+} as const;
 
 interface Suggestion {
   icon: string;
@@ -56,21 +108,42 @@ function formatMarkdown(text: string): string {
 }
 
 export default function AIAssistantPage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       sender: "ai",
-      content: "¡Hola! Soy tu asistente de estudio inteligente de StudyAI. Tengo acceso a todos tus apuntes digitalizados y puedo ayudarte a resolver dudas, resumir conceptos complejos o repasar tus temas. ¿Sobre qué te gustaría estudiar hoy?",
+      content: t.welcomeMsg,
       suggestions: [
-        { icon: "school", title: "Explica la diferencia entre sinapsis química y eléctrica", desc: "Neurobiología clásica", bg: "bg-secondary-container", text: "text-on-secondary-container" },
-        { icon: "assignment", title: "Genérame preguntas de práctica", desc: "Auto-evaluación rápida", bg: "bg-tertiary-container", text: "text-on-tertiary-container" },
-        { icon: "troubleshoot", title: "Resume los puntos clave de mis apuntes", desc: "Análisis semántico de notas", bg: "bg-primary-container/20", text: "text-primary" },
+        { icon: "school", title: t.sug1Title, desc: t.sug1Desc, bg: "bg-secondary-container", text: "text-on-secondary-container" },
+        { icon: "assignment", title: t.sug2Title, desc: t.sug2Desc, bg: "bg-tertiary-container", text: "text-on-tertiary-container" },
+        { icon: "troubleshoot", title: t.sug3Title, desc: t.sug3Desc, bg: "bg-primary-container/20", text: "text-primary" },
       ],
     },
   ]);
   const [references, setReferences] = useState<Reference[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Keep the welcome message in sync when lang changes
+  useEffect(() => {
+    setMessages((prev) => {
+      const rest = prev.slice(1);
+      const welcome: Message = {
+        id: 1,
+        sender: "ai",
+        content: t.welcomeMsg,
+        suggestions: [
+          { icon: "school", title: t.sug1Title, desc: t.sug1Desc, bg: "bg-secondary-container", text: "text-on-secondary-container" },
+          { icon: "assignment", title: t.sug2Title, desc: t.sug2Desc, bg: "bg-tertiary-container", text: "text-on-tertiary-container" },
+          { icon: "troubleshoot", title: t.sug3Title, desc: t.sug3Desc, bg: "bg-primary-container/20", text: "text-primary" },
+        ],
+      };
+      return [welcome, ...rest];
+    });
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend || input).trim();
@@ -102,8 +175,8 @@ export default function AIAssistantPage() {
           title: src.title,
           icon: "description",
           iconColor: "text-primary",
-          excerpt: `Coincidencia semántica con score de: ${src.score}`,
-          tags: ["Nota", `ID: ${src.note_id.slice(0, 8)}`],
+          excerpt: `${t.scoreLabel} ${src.score}`,
+          tags: [t.tagNote, `ID: ${src.note_id.slice(0, 8)}`],
         }));
         setReferences(newRefs);
       }
@@ -111,7 +184,7 @@ export default function AIAssistantPage() {
       const errorMessage: Message = {
         id: Date.now() + 1,
         sender: "ai",
-        content: `Error al obtener respuesta del asistente: ${(err as Error).message}`,
+        content: `${t.errorPrefix} ${(err as Error).message}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -128,19 +201,19 @@ export default function AIAssistantPage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search across your notes..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 ml-0 md:ml-64 h-[calc(100vh)] md:h-[calc(100vh-4rem)] md:mt-16 flex flex-col bg-surface overflow-hidden">
         {/* Workspace Header */}
         <div className="px-lg py-md border-b border-surface-container-high bg-surface flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
           <div>
-            <h2 className="text-headline-lg text-on-surface">AI Assistant</h2>
-            <p className="text-body-md text-on-surface-variant">Your integrated academic tutor. Ask anything about your materials.</p>
+            <h2 className="text-headline-lg text-on-surface">{t.pageTitle}</h2>
+            <p className="text-body-md text-on-surface-variant">{t.pageSubtitle}</p>
           </div>
           <div className="flex items-center gap-2 bg-surface-container-low p-1 rounded-lg border border-surface-variant shadow-sm">
             <span className="material-symbols-outlined text-on-surface-variant ml-2">tune</span>
             <select className="bg-transparent border-none text-body-md text-on-surface focus:ring-0 cursor-pointer py-1 pr-8">
-              <option>Context: All Notes</option>
-              <option selected>Context: StudyAI Notebook</option>
+              <option>{t.contextAll}</option>
+              <option selected>{t.contextNotebook}</option>
             </select>
           </div>
         </div>
@@ -204,7 +277,7 @@ export default function AIAssistantPage() {
                   </div>
                   <div className="flex-1 max-w-3xl">
                     <div className="bg-surface-container-lowest border border-surface-variant shadow-sm rounded-2xl rounded-tl-sm p-md flex items-center gap-3">
-                      <span className="text-body-md text-on-surface-variant font-medium">StudyAI está analizando tus apuntes y redactando la respuesta...</span>
+                      <span className="text-body-md text-on-surface-variant font-medium">{t.loading}</span>
                       <span className="flex gap-1 items-center">
                         <span className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }}></span>
                         <span className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -223,7 +296,7 @@ export default function AIAssistantPage() {
               <div className="relative bg-surface-container-low rounded-2xl border border-surface-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm transition-all">
                 <textarea
                   className="w-full bg-transparent border-none resize-none p-4 pr-16 text-body-md text-on-surface focus:ring-0 placeholder-on-surface-variant/50"
-                  placeholder="Escribe tus dudas, pide resúmenes o consulta sobre tus apuntes..."
+                  placeholder={t.placeholder}
                   rows={2}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -240,7 +313,7 @@ export default function AIAssistantPage() {
                 </div>
               </div>
               <div className="mt-2 text-center">
-                <span className="text-caption text-outline">StudyAI puede cometer errores. Considera verificar la información importante.</span>
+                <span className="text-caption text-outline">{t.disclaimer}</span>
               </div>
             </div>
           </div>
@@ -248,15 +321,15 @@ export default function AIAssistantPage() {
           {/* Right Side: References */}
           <div className="hidden xl:flex w-80 flex-col bg-surface-container-lowest border-l border-surface-container-high overflow-y-auto">
             <div className="p-md border-b border-surface-variant sticky top-0 bg-surface-container-lowest/90 backdrop-blur z-10">
-              <h3 className="text-headline-md text-on-surface">Active References</h3>
-              <p className="text-caption text-on-surface-variant">Sources used in this conversation</p>
+              <h3 className="text-headline-md text-on-surface">{t.refsTitle}</h3>
+              <p className="text-caption text-on-surface-variant">{t.refsSubtitle}</p>
             </div>
             <div className="p-md space-y-4">
               {references.length === 0 ? (
                 <div className="text-center py-8 px-4 border border-dashed border-outline-variant rounded-xl">
                   <span className="material-symbols-outlined text-outline text-3xl mb-2">find_in_page</span>
-                  <p className="text-body-md text-on-surface-variant">No hay referencias activas.</p>
-                  <p className="text-caption text-outline">Las referencias aparecerán aquí cuando StudyAI consulte tus apuntes.</p>
+                  <p className="text-body-md text-on-surface-variant">{t.noRefs}</p>
+                  <p className="text-caption text-outline">{t.noRefsHint}</p>
                 </div>
               ) : (
                 references.map((ref, i) => (
