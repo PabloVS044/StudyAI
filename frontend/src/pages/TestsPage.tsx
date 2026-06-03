@@ -278,11 +278,11 @@ export default function TestsPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 mt-16 p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64">
+      <main className="flex-1 mt-16 p-4 md:p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64">
 
         {/* Header */}
         <div className="mb-md">
-          <h2 className="text-headline-lg text-on-background flex items-center gap-sm">
+          <h2 className="text-headline-lg text-on-background flex flex-wrap items-center gap-sm">
             {t.title}
             <span className="bg-primary-container/10 text-primary text-caption px-sm py-xs rounded-full inline-flex items-center gap-xs">
               <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>quiz</span>
@@ -422,7 +422,7 @@ export default function TestsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
 
             {/* Main question area */}
-            <div className="lg:col-span-8 flex flex-col gap-md">
+            <div className="lg:col-span-8 flex flex-col gap-md order-2 lg:order-1">
 
               {/* Progress bar */}
               <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
@@ -495,14 +495,14 @@ export default function TestsPage() {
               </div>
             </div>
 
-            {/* Side stats */}
-            <div className="lg:col-span-4 flex flex-col gap-md">
+            {/* Side stats - on mobile shows above question, on lg stacks in sidebar */}
+            <div className="lg:col-span-4 flex flex-col gap-md order-1 lg:order-2">
               <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md">
                 <h3 className="text-label-md text-on-surface mb-md flex items-center gap-sm">
                   <span className="material-symbols-outlined text-secondary text-[18px]">monitoring</span>
                   Stats
                 </h3>
-                <div className="grid grid-cols-2 gap-sm">
+                <div className="grid grid-cols-3 lg:grid-cols-2 gap-sm">
                   <div className="bg-green-500/10 rounded-lg p-sm text-center border border-green-500/20">
                     <span className="block text-headline-md text-green-600 dark:text-green-400">{correct}</span>
                     <span className="text-caption text-outline">{t.correct}</span>
@@ -511,7 +511,7 @@ export default function TestsPage() {
                     <span className="block text-headline-md text-secondary">{answers.length - correct}</span>
                     <span className="text-caption text-outline">{t.incorrect}</span>
                   </div>
-                  <div className="bg-primary-container/10 rounded-lg p-sm text-center border border-primary-container/20 col-span-2">
+                  <div className="bg-primary-container/10 rounded-lg p-sm text-center border border-primary-container/20 lg:col-span-2">
                     <span className="block text-headline-md text-primary">{currentStreak}</span>
                     <span className="text-caption text-outline">{t.streak}</span>
                     {mode === "imposible" && (
@@ -589,7 +589,7 @@ export default function TestsPage() {
             </div>
 
             <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md mb-gutter">
-              <div className="grid grid-cols-3 gap-md text-center">
+              <div className="grid grid-cols-3 gap-2 md:gap-md text-center overflow-hidden">
                 <div>
                   <p className="text-headline-md text-primary">{finalCorrect}/{total}</p>
                   <p className="text-caption text-outline">{t.score}</p>
@@ -653,7 +653,7 @@ export default function TestsPage() {
               </div>
             </div>
 
-            <div className="flex gap-md justify-center">
+            <div className="flex flex-wrap gap-md justify-center">
               <button
                 onClick={handleRetry}
                 className="px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface text-label-md hover:bg-surface-container-high transition-colors flex items-center gap-xs"

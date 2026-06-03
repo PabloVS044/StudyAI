@@ -1,4 +1,6 @@
 import { SignUp } from "@clerk/react";
+import { Link } from "react-router-dom";
+import { useAppSettings } from "../context/AppSettings";
 
 const clerkAppearance = {
   variables: {
@@ -28,8 +30,16 @@ const clerkAppearance = {
 };
 
 export default function SignUpPage() {
+  const { lang } = useAppSettings();
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="relative flex h-screen w-screen overflow-hidden bg-background">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 z-30 flex items-center gap-1.5 rounded-full bg-surface/80 backdrop-blur px-3 py-1.5 text-sm font-medium text-on-surface border border-outline-variant hover:bg-surface-container transition-colors"
+      >
+        <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+        {lang === "es" ? "Inicio" : "Home"}
+      </Link>
       {/* Left column - hidden on mobile */}
       <div className="hidden md:flex md:w-1/2 relative flex-col items-center justify-center overflow-hidden">
         {/* Gradient background */}

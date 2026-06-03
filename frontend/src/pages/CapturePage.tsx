@@ -144,7 +144,7 @@ export default function CapturePage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="ml-0 md:ml-64 mt-16 w-full p-lg lg:p-xl flex justify-center bg-background">
+      <main className="ml-0 md:ml-64 mt-16 w-full px-4 py-6 md:p-lg lg:p-xl flex justify-center bg-background">
         <div className="max-w-4xl w-full flex flex-col gap-lg pb-xl">
 
           {/* Header */}
@@ -259,7 +259,7 @@ export default function CapturePage() {
             <button
               onClick={handleExtract}
               disabled={!files.length || extracting}
-              className="bg-primary text-on-primary font-label-md text-label-md px-xl py-md rounded-full hover:bg-primary-container transition-colors shadow-sm flex items-center gap-sm text-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full md:w-auto bg-primary text-on-primary font-label-md text-label-md px-xl py-md rounded-full hover:bg-primary-container transition-colors shadow-sm flex items-center justify-center gap-sm text-lg disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {extracting && <Spinner size={20} />}
               {extracting ? t.processing : t.processBtn}

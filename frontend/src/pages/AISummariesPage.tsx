@@ -156,9 +156,9 @@ export default function AISummariesPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 mt-16 ml-0 md:ml-64 flex h-[calc(100vh-4rem)] overflow-hidden">
+      <main className="flex-1 mt-16 ml-0 md:ml-64 flex flex-col md:flex-row h-[calc(100vh-4rem)] overflow-hidden">
         {/* Left Pane: Notes List */}
-        <aside className="w-full md:w-80 lg:w-96 border-r border-outline-variant/30 flex flex-col bg-surface overflow-hidden hidden md:flex shrink-0">
+        <aside className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-outline-variant/30 flex flex-col bg-surface overflow-hidden shrink-0 max-h-[40vh] md:max-h-none">
           <div className="p-md flex flex-col gap-4 border-b border-outline-variant/30">
             <h2 className="text-headline-md text-primary">{t.notesTitle}</h2>
           </div>
@@ -201,7 +201,7 @@ export default function AISummariesPage() {
         </aside>
 
         <section className="flex-1 flex flex-col bg-surface-container-lowest overflow-hidden relative min-h-0">
-          <div className="h-14 border-b border-outline-variant/20 flex items-center justify-between px-lg bg-surface-container-lowest/90 backdrop-blur z-10">
+          <div className="h-14 border-b border-outline-variant/20 flex items-center justify-between px-4 md:px-lg bg-surface-container-lowest/90 backdrop-blur z-10">
             <div className="flex items-center gap-2 text-sm text-on-surface-variant min-w-0">
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
               <span className="font-medium text-caption">
@@ -310,7 +310,7 @@ export default function AISummariesPage() {
           </div>
 
           {/* Floating Action Bar */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-surface-bright/90 backdrop-blur-xl border border-outline-variant/30 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-full px-2 py-2 flex items-center gap-1 z-20">
+          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-surface-bright/90 backdrop-blur-xl border border-outline-variant/30 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-full px-2 py-2 flex items-center gap-1 z-20">
             <button
               onClick={handleGenerate}
               disabled={!selectedNote || generating}
