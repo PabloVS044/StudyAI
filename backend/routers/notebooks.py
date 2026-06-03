@@ -1,4 +1,5 @@
 """CRUD para notebooks (libros de notas que agrupan varias notas)."""
+import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -24,6 +25,17 @@ class AssignNotes(BaseModel):
     note_ids: list[str]
 
 
+def _clean_tags(value) -> list[str]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except Exception:
+            value = [value]
+    if not isinstance(value, list):
+        return []
+    return [str(t).strip() for t in value if str(t).strip()][:4]
+
+
 def _note_to_item(row: dict) -> dict:
     c = supabase_client.note_content(row)
     preview = (c.get("texto_principal") or c.get("titulo") or row["filename"])[:300]
@@ -39,6 +51,7 @@ def _note_to_item(row: dict) -> dict:
         "notion_url": row.get("notion_url"),
         "drive_url": row.get("drive_url"),
         "notebook_id": row.get("notebook_id"),
+        "tags": _clean_tags(row.get("tags")) or _clean_tags(c.get("tags")),
     }
 
 
