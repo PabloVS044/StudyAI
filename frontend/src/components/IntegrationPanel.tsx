@@ -1,19 +1,7 @@
-/**
- * IntegrationPanel — shows Save / Notion / Drive / Obsidian buttons for a note.
- *
- * Props:
- *   noteId     – the note's UUID
- *   filename   – original image filename
- *   imageExt   – file extension (jpg, png, …) so the parent knows an image exists
- *   saved      – whether the note is already saved to StudyAI (SQLite + Pinecone)
- *   notionUrl  – pre-existing Notion page URL (if already synced)
- *   driveUrl   – pre-existing Drive URL (if already synced)
- *   onSave     – callback after successful save
- */
-import { useState } from "react";
-import { Save, BookMarked, HardDrive, FileCode2, CheckCircle2, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, BookMarked, HardDrive, FileCode2, CheckCircle2, ExternalLink, Link } from "lucide-react";
 import Spinner from "./Spinner";
-import { syncNotion, syncDrive, exportObsidian, saveObsidianVault } from "../api/client";
+import { getMyIntegrations, exportNotion, exportDrive, exportObsidian, saveObsidianVault } from "../api/client";
 import { useConfig } from "../hooks/useConfig";
 import type { NoteContent } from "../types/note";
 
@@ -43,6 +31,16 @@ export default function IntegrationPanel({
 
   const [savingNote, setSavingNote] = useState(false);
   const [saved, setSaved] = useState(initialSaved);
+
+  // Per-user integration state loaded from backend
+  const [integrations, setIntegrations] = useState<{
+    notion: { connected: boolean; account: string | null; book: string | null; available: boolean };
+    google: { connected: boolean; account: string | null; folder: string | null; available: boolean };
+  } | null>(null);
+
+  useEffect(() => {
+    getMyIntegrations().then(setIntegrations).catch(() => {});
+  }, []);
 
   const [notionStatus, setNotionStatus] = useState<Status>(initialNotionUrl ? "done" : "idle");
   const [notionUrl, setNotionUrl] = useState(initialNotionUrl ?? "");
@@ -74,7 +72,7 @@ export default function IntegrationPanel({
     setNotionStatus("loading");
     setErrorMsg("");
     try {
-      const res = await syncNotion(noteId);
+      const res = await exportNotion(noteId);
       setNotionUrl(res.url);
       setNotionStatus("done");
     } catch (e) {
@@ -87,7 +85,7 @@ export default function IntegrationPanel({
     setDriveStatus("loading");
     setErrorMsg("");
     try {
-      const res = await syncDrive(noteId);
+      const res = await exportDrive(noteId);
       setDriveUrl(res.url);
       setDriveStatus("done");
     } catch (e) {
@@ -184,31 +182,41 @@ export default function IntegrationPanel({
         />
 
         {/* Notion */}
-        {cfg.notion && saved && (
+        {saved && integrations?.notion.available && (
           notionStatus === "done" ? (
             <a href={notionUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors text-slate-200">
               <ExternalLink size={13} /> Ver en Notion
             </a>
-          ) : (
+          ) : integrations.notion.connected && integrations.notion.book ? (
             <ActionBtn
               icon={notionStatus === "loading" ? <Spinner size={14} /> : <BookMarked size={14} />}
-              label={notionStatus === "loading" ? "Sincronizando…" : notionStatus === "error" ? "Reintentar Notion" : "Guardar en Notion"}
+              label={notionStatus === "loading" ? "Guardando…" : notionStatus === "error" ? "Reintentar Notion" : "Guardar en Notion"}
               onClick={handleNotion}
               disabled={notionStatus === "loading"}
               variant={notionStatus === "error" ? "danger" : "secondary"}
             />
+          ) : integrations.notion.connected ? (
+            <a href="/integrations"
+              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+              <BookMarked size={14} /> Elige un libro en Integraciones
+            </a>
+          ) : (
+            <a href="/integrations"
+              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+              <Link size={14} /> Conecta Notion en Integraciones
+            </a>
           )
         )}
 
         {/* Google Drive */}
-        {cfg.drive && saved && (
+        {saved && integrations?.google.available && (
           driveStatus === "done" ? (
             <a href={driveUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors text-slate-200">
               <ExternalLink size={13} /> Ver en Drive
             </a>
-          ) : (
+          ) : integrations.google.connected && integrations.google.folder ? (
             <ActionBtn
               icon={driveStatus === "loading" ? <Spinner size={14} /> : <HardDrive size={14} />}
               label={driveStatus === "loading" ? "Subiendo…" : driveStatus === "error" ? "Reintentar Drive" : "Subir foto a Drive"}
@@ -216,6 +224,16 @@ export default function IntegrationPanel({
               disabled={driveStatus === "loading"}
               variant={driveStatus === "error" ? "danger" : "secondary"}
             />
+          ) : integrations.google.connected ? (
+            <a href="/integrations"
+              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+              <HardDrive size={14} /> Elige una carpeta en Integraciones
+            </a>
+          ) : (
+            <a href="/integrations"
+              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+              <Link size={14} /> Conecta Drive en Integraciones
+            </a>
           )
         )}
 

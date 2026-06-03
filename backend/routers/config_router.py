@@ -13,4 +13,5 @@ async def get_config():
         "drive": settings.drive_enabled,
         "obsidian": settings.obsidian_enabled,
         "pinecone": bool(settings.PINECONE_API_KEY),
+        "mistral": bool(settings.MISTRAL_API_KEY),
     }
