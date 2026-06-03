@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -94,8 +94,8 @@ export function notionConnectUrl(): Promise<{ auth_url: string }> {
   return req("/api/integrations/notion/connect");
 }
 
-export function exchangeNotion(code: string, state: string): Promise<{ connected: boolean; account: string }> {
-  return req("/api/integrations/notion/exchange", {
+export function exchangeOAuth(code: string, state: string): Promise<{ provider: "notion" | "google"; connected: boolean; account: string }> {
+  return req("/api/integrations/oauth/exchange", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, state }),
@@ -226,6 +226,35 @@ export function generateSummary(payload: SummaryRequest): Promise<SummaryRespons
 
 export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
   return req("/api/summaries/list");
+}
+
+// ── Quiz ──────────────────────────────────────────────────────────────────────
+export function generateQuiz(
+  noteId: string,
+  opts: { count: number; difficulty: string }
+): Promise<QuizResult> {
+  return req(`/api/quiz/${noteId}/generate?count=${opts.count}&difficulty=${opts.difficulty}`, { method: "POST" });
+}
+
+export function saveQuizAttempt(payload: {
+  note_id: string;
+  difficulty: string;
+  mode: string;
+  total: number;
+  correct: number;
+  max_streak: number;
+  passed: boolean;
+}): Promise<{ saved: boolean }> {
+  return req("/api/quiz/attempt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listQuizAttempts(noteId?: string): Promise<any[]> {
+  const qs = noteId ? `?note_id=${noteId}` : "";
+  return req(`/api/quiz/attempts${qs}`);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

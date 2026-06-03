@@ -65,3 +65,23 @@ CREATE TABLE IF NOT EXISTS oauth_states (
     provider   TEXT        NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- =============================================================================
+-- Quiz attempts (resultados de quizzes por usuario y nota)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id    TEXT        NOT NULL,
+    note_id    TEXT        NOT NULL,
+    difficulty TEXT        NOT NULL,   -- 'facil' | 'medio' | 'dificil'
+    mode       TEXT        NOT NULL,   -- 'normal' | 'imposible'
+    total      INT         NOT NULL,
+    correct    INT         NOT NULL,
+    max_streak INT         NOT NULL,
+    passed     BOOLEAN     NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_note
+    ON quiz_attempts (user_id, note_id);

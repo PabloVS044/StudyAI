@@ -10,6 +10,7 @@ import CapturePage from "./pages/CapturePage";
 import LibraryPage from "./pages/LibraryStitchPage";
 import AISummariesPage from "./pages/AISummariesPage";
 import FlashcardsPage from "./pages/FlashcardsPage";
+import TestsPage from "./pages/TestsPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import SearchPage from "./pages/SearchPage";
@@ -27,6 +28,7 @@ function AppShell() {
             <Route path="/library"          element={<LibraryPage />} />
             <Route path="/ai-summaries"     element={<AISummariesPage />} />
             <Route path="/flashcards"       element={<FlashcardsPage />} />
+            <Route path="/tests"            element={<TestsPage />} />
             <Route path="/integrations"     element={<IntegrationsPage />} />
             <Route path="/ai-assistant"     element={<AIAssistantPage />} />
             <Route path="/search"           element={<SearchPage />} />
