@@ -312,6 +312,12 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
+/* Dark mode: botones de fondo blanco necesitan texto oscuro (sino el texto blanco queda invisible) */
+.landing-root.l-dark .l-btn-accent,
+.landing-root.l-dark .l-btn-primary {
+  color: var(--bg);
+}
+
 .l-btn-ghost-hero {
   background: rgba(255, 255, 255, 0.18);
   color: white;
