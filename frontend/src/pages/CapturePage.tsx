@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import CameraModal from "../components/CameraModal";
 import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
-import { extractImages, saveNote } from "../api/client";
-import type { ExtractResult } from "../types/note";
+import { extractImages, saveNote, listNotebooks, createNotebook } from "../api/client";
+import type { ExtractResult, Notebook } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
 import { notify } from "../lib/toast";
 
@@ -29,6 +29,12 @@ const COPY = {
     errorDefault: "Error al conectar con el backend",
     noteSaved: "Nota guardada",
     noteSavedError: "Error al guardar la nota",
+    notebookLabel: "Libro (opcional)",
+    notebookNone: "Sin libro",
+    notebookCreate: "Crear nuevo libro...",
+    notebookCreatePrompt: "Nombre del nuevo libro:",
+    notebookCreated: "Libro creado",
+    notebookCreateError: "Error al crear el libro",
     inputTypes: [
       { icon: "document_scanner", label: "Foto de Apunte", action: "camera" },
       { icon: "draw", label: "Nota en Tablet", action: "file" },
@@ -56,6 +62,12 @@ const COPY = {
     errorDefault: "Error connecting to backend",
     noteSaved: "Note saved",
     noteSavedError: "Error saving note",
+    notebookLabel: "Notebook (optional)",
+    notebookNone: "No notebook",
+    notebookCreate: "Create new notebook...",
+    notebookCreatePrompt: "New notebook name:",
+    notebookCreated: "Notebook created",
+    notebookCreateError: "Error creating notebook",
     inputTypes: [
       { icon: "document_scanner", label: "Note Photo", action: "camera" },
       { icon: "draw", label: "Tablet Note", action: "file" },
@@ -77,6 +89,41 @@ export default function CapturePage() {
   const [results, setResults] = useState<ExtractResult[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [selectedNotebookId, setSelectedNotebookId] = useState<number | undefined>(undefined);
+  const [loadingNotebooks, setLoadingNotebooks] = useState(false);
+  const [creatingNotebook, setCreatingNotebook] = useState(false);
+
+  useEffect(() => {
+    setLoadingNotebooks(true);
+    listNotebooks()
+      .then(setNotebooks)
+      .catch(() => {})
+      .finally(() => setLoadingNotebooks(false));
+  }, []);
+
+  async function handleNotebookChange(value: string) {
+    if (value === "__create__") {
+      const name = window.prompt(t.notebookCreatePrompt);
+      if (!name?.trim()) return;
+      setCreatingNotebook(true);
+      try {
+        const nb = await createNotebook({ name: name.trim() });
+        setNotebooks((prev) => [nb, ...prev]);
+        setSelectedNotebookId(nb.id);
+        notify.success(t.notebookCreated);
+      } catch {
+        notify.error(t.notebookCreateError);
+      } finally {
+        setCreatingNotebook(false);
+      }
+    } else if (value === "") {
+      setSelectedNotebookId(undefined);
+    } else {
+      setSelectedNotebookId(Number(value));
+    }
+  }
 
   function addFiles(incoming: File[]) {
     const valid = incoming.filter((f) => ALLOWED.has(f.type));
@@ -123,7 +170,7 @@ export default function CapturePage() {
           .filter((r) => r.content && !r.error)
           .map(async (r) => {
             try {
-              await saveNote({ note_id: r.note_id, filename: r.filename, image_ext: r.image_ext, content: r.content! });
+              await saveNote({ note_id: r.note_id, filename: r.filename, image_ext: r.image_ext, content: r.content!, notebook_id: selectedNotebookId });
               autoSaved.add(r.note_id);
             } catch {
               // fallo silencioso — usuario puede guardar manualmente
@@ -244,6 +291,34 @@ export default function CapturePage() {
             <div>
               <h4 className="text-label-md text-on-surface mb-xs">{t.aiTitle}</h4>
               <p className="text-body-md text-on-surface-variant">{t.aiDesc}</p>
+            </div>
+          </div>
+
+          {/* Notebook selector */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
+            <label htmlFor="notebook-select" className="text-label-md text-on-surface whitespace-nowrap flex items-center gap-xs">
+              <span className="material-symbols-outlined text-primary text-[18px]">menu_book</span>
+              {t.notebookLabel}
+            </label>
+            <div className="relative flex-1 max-w-sm">
+              <select
+                id="notebook-select"
+                value={selectedNotebookId ?? ""}
+                onChange={(e) => handleNotebookChange(e.target.value)}
+                disabled={loadingNotebooks || creatingNotebook}
+                className="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm pr-xl text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+              >
+                <option value="">{t.notebookNone}</option>
+                {notebooks.map((nb) => (
+                  <option key={nb.id} value={nb.id}>
+                    {nb.name}{nb.note_count != null ? ` (${nb.note_count})` : ""}
+                  </option>
+                ))}
+                <option value="__create__">{t.notebookCreate}</option>
+              </select>
+              <span className="pointer-events-none absolute right-sm top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[18px]">
+                {creatingNotebook ? "hourglass_empty" : "expand_more"}
+              </span>
             </div>
           </div>
 

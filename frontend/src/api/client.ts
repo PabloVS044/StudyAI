@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
+import type { AppConfig, ExamResult, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, Notebook, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
 const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
@@ -40,6 +40,7 @@ export function saveNote(payload: {
   filename: string;
   image_ext?: string;
   content: object;
+  notebook_id?: number;
 }): Promise<{ note_id: string; saved: boolean }> {
   return req("/api/notes/save", {
     method: "POST",
@@ -48,8 +49,10 @@ export function saveNote(payload: {
   });
 }
 
-export function listNotes(limit = 50): Promise<NoteListItem[]> {
-  return req(`/api/notes?limit=${limit}`);
+export function listNotes(limit = 50, notebook_id?: number): Promise<NoteListItem[]> {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  if (notebook_id != null) qs.set("notebook_id", String(notebook_id));
+  return req(`/api/notes?${qs}`);
 }
 
 export function getNote(noteId: string): Promise<NoteDetail> {
@@ -244,8 +247,22 @@ export function saveQuizAttempt(payload: {
   correct: number;
   max_streak: number;
   passed: boolean;
+  notebook_id?: number;
 }): Promise<{ saved: boolean }> {
   return req("/api/quiz/attempt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function generateExam(payload: {
+  notebook_id?: number;
+  note_ids?: string[];
+  count: number;
+  difficulty: string;
+}): Promise<ExamResult> {
+  return req("/api/quiz/exam", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -255,6 +272,47 @@ export function saveQuizAttempt(payload: {
 export function listQuizAttempts(noteId?: string): Promise<any[]> {
   const qs = noteId ? `?note_id=${noteId}` : "";
   return req(`/api/quiz/attempts${qs}`);
+}
+
+// ── Notebooks ─────────────────────────────────────────────────────────────────
+export function createNotebook(payload: { name: string; description?: string }): Promise<Notebook> {
+  return req("/api/notebooks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listNotebooks(): Promise<Notebook[]> {
+  return req("/api/notebooks");
+}
+
+export function getNotebook(id: number): Promise<{ notebook: Notebook; notes: NoteListItem[] }> {
+  return req(`/api/notebooks/${id}`);
+}
+
+export function updateNotebook(id: number, payload: { name?: string; description?: string }): Promise<Notebook> {
+  return req(`/api/notebooks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteNotebook(id: number): Promise<{ deleted: boolean; id: number }> {
+  return req(`/api/notebooks/${id}`, { method: "DELETE" });
+}
+
+export function assignNotesToNotebook(id: number, noteIds: string[]): Promise<{ assigned: number; notebook_id: number }> {
+  return req(`/api/notebooks/${id}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note_ids: noteIds }),
+  });
+}
+
+export function removeNoteFromNotebook(id: number, noteId: string): Promise<{ removed: boolean; note_id: string }> {
+  return req(`/api/notebooks/${id}/notes/${noteId}`, { method: "DELETE" });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

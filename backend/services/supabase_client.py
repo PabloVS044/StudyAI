@@ -21,8 +21,9 @@ def create_note(
     content_json: str,
     tags: str = "[]",
     user_id: str = "",
+    notebook_id: Optional[int] = None,
 ) -> None:
-    _client().table("notes").upsert({
+    row = {
         "note_id": note_id,
         "title": title,
         "filename": filename,
@@ -30,7 +31,10 @@ def create_note(
         "content_json": content_json,
         "tags": tags,
         "user_id": user_id,
-    }).execute()
+    }
+    if notebook_id is not None:
+        row["notebook_id"] = notebook_id
+    _client().table("notes").upsert(row).execute()
 
 
 def get_note(note_id: str, user_id: Optional[str] = None) -> Optional[dict]:
@@ -42,10 +46,16 @@ def get_note(note_id: str, user_id: Optional[str] = None) -> Optional[dict]:
     return rows[0] if rows else None
 
 
-def list_notes(limit: int = 50, user_id: Optional[str] = None) -> list[dict]:
+def list_notes(
+    limit: int = 50,
+    user_id: Optional[str] = None,
+    notebook_id: Optional[int] = None,
+) -> list[dict]:
     q = _client().table("notes").select("*").order("created_at", desc=True).limit(limit)
     if user_id:
         q = q.eq("user_id", user_id)
+    if notebook_id is not None:
+        q = q.eq("notebook_id", notebook_id)
     result = q.execute()
     return result.data or []
 
@@ -157,8 +167,9 @@ def save_quiz_attempt(
     correct: int,
     max_streak: int,
     passed: bool,
+    notebook_id: Optional[int] = None,
 ) -> None:
-    _client().table("quiz_attempts").insert({
+    row = {
         "user_id": user_id,
         "note_id": note_id,
         "difficulty": difficulty,
@@ -167,7 +178,10 @@ def save_quiz_attempt(
         "correct": correct,
         "max_streak": max_streak,
         "passed": passed,
-    }).execute()
+    }
+    if notebook_id is not None:
+        row["notebook_id"] = notebook_id
+    _client().table("quiz_attempts").insert(row).execute()
 
 
 def list_quiz_attempts(user_id: str, note_id: Optional[str] = None) -> list[dict]:
@@ -181,3 +195,116 @@ def list_quiz_attempts(user_id: str, note_id: Optional[str] = None) -> list[dict
         q = q.eq("note_id", note_id)
     result = q.order("created_at", desc=True).execute()
     return result.data or []
+
+
+# ---------------------------------------------------------------------------
+# Notebooks (libros de notas)
+# ---------------------------------------------------------------------------
+
+def create_notebook(user_id: str, name: str, description: Optional[str] = None) -> dict:
+    result = _client().table("notebooks").insert({
+        "user_id": user_id,
+        "name": name,
+        "description": description,
+    }).execute()
+    rows = result.data or []
+    return rows[0] if rows else {}
+
+
+def list_notebooks(user_id: str) -> list[dict]:
+    result = (
+        _client()
+        .table("notebooks")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    notebooks = result.data or []
+    for nb in notebooks:
+        count_res = (
+            _client()
+            .table("notes")
+            .select("note_id", count="exact")
+            .eq("user_id", user_id)
+            .eq("notebook_id", nb["id"])
+            .execute()
+        )
+        nb["note_count"] = count_res.count or 0
+    return notebooks
+
+
+def get_notebook(notebook_id: int, user_id: str) -> Optional[dict]:
+    result = (
+        _client()
+        .table("notebooks")
+        .select("*")
+        .eq("id", notebook_id)
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    rows = result.data or []
+    return rows[0] if rows else None
+
+
+def update_notebook(notebook_id: int, user_id: str, **fields) -> None:
+    fields = {k: v for k, v in fields.items() if v is not None}
+    if not fields:
+        return
+    (
+        _client()
+        .table("notebooks")
+        .update(fields)
+        .eq("id", notebook_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+
+def delete_notebook(notebook_id: int, user_id: str) -> None:
+    # Desvincula las notas (no las borra)
+    (
+        _client()
+        .table("notes")
+        .update({"notebook_id": None})
+        .eq("user_id", user_id)
+        .eq("notebook_id", notebook_id)
+        .execute()
+    )
+    (
+        _client()
+        .table("notebooks")
+        .delete()
+        .eq("id", notebook_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+
+
+def assign_notes_to_notebook(user_id: str, notebook_id: int, note_ids: list[str]) -> None:
+    if not note_ids:
+        return
+    (
+        _client()
+        .table("notes")
+        .update({"notebook_id": notebook_id})
+        .eq("user_id", user_id)
+        .in_("note_id", note_ids)
+        .execute()
+    )
+
+
+def remove_note_from_notebook(user_id: str, note_id: str) -> None:
+    (
+        _client()
+        .table("notes")
+        .update({"notebook_id": None})
+        .eq("user_id", user_id)
+        .eq("note_id", note_id)
+        .execute()
+    )
+
+
+def list_notes_by_notebook(user_id: str, notebook_id: int) -> list[dict]:
+    return list_notes(limit=1000, user_id=user_id, notebook_id=notebook_id)

@@ -17,6 +17,7 @@ class SaveRequest(BaseModel):
     filename: str
     image_ext: str | None = None
     content: dict  # raw NoteContent dict
+    notebook_id: int | None = None
 
 
 class SearchRequest(BaseModel):
@@ -37,7 +38,7 @@ def _clean_tags(value) -> list[str]:
     return [str(tag).strip() for tag in value if str(tag).strip()][:4]
 
 
-def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
+def _embed_and_upsert(note_id: str, filename: str, content: dict, user_id: str) -> None:
     """Run in background — generate embedding and store in Pinecone."""
     text = embeddings.note_to_embed_text(content)
     vector = embeddings.get_embedding(settings.MISTRAL_API_KEY, text)
@@ -46,6 +47,7 @@ def _embed_and_upsert(note_id: str, filename: str, content: dict) -> None:
         index_name=settings.PINECONE_INDEX_NAME,
         note_id=note_id,
         vector=vector,
+        namespace=user_id,
         metadata={
             "title": content.get("titulo") or filename,
             "filename": filename,
@@ -91,16 +93,21 @@ async def save_note(req: SaveRequest, bg: BackgroundTasks, user_id: str = Depend
         content_json=json.dumps(content, ensure_ascii=False),
         tags=json.dumps(tags, ensure_ascii=False),
         user_id=user_id,
+        notebook_id=req.notebook_id,
     )
     if settings.PINECONE_API_KEY and settings.MISTRAL_API_KEY:
-        bg.add_task(_embed_and_upsert, req.note_id, req.filename, content)
+        bg.add_task(_embed_and_upsert, req.note_id, req.filename, content, user_id)
 
     return {"note_id": req.note_id, "saved": True}
 
 
 @router.get("")
-async def list_notes(limit: int = 50, user_id: str = Depends(get_current_user)):
-    rows = supabase_client.list_notes(limit, user_id)
+async def list_notes(
+    limit: int = 50,
+    notebook_id: int | None = None,
+    user_id: str = Depends(get_current_user),
+):
+    rows = supabase_client.list_notes(limit, user_id, notebook_id)
     return [_note_to_item(r) for r in rows]
 
 
@@ -120,7 +127,7 @@ async def delete_note(note_id: str, user_id: str = Depends(get_current_user)):
     if settings.PINECONE_API_KEY:
         try:
             pinecone_client.delete_vector(
-                settings.PINECONE_API_KEY, settings.PINECONE_INDEX_NAME, note_id
+                settings.PINECONE_API_KEY, settings.PINECONE_INDEX_NAME, note_id, namespace=user_id
             )
         except Exception:
             pass
@@ -134,7 +141,7 @@ async def search_notes(req: SearchRequest, user_id: str = Depends(get_current_us
 
     vector = embeddings.get_embedding(settings.MISTRAL_API_KEY, req.query)
     matches = pinecone_client.query_similar(
-        settings.PINECONE_API_KEY, settings.PINECONE_INDEX_NAME, vector, req.top_k
+        settings.PINECONE_API_KEY, settings.PINECONE_INDEX_NAME, vector, req.top_k, namespace=user_id
     )
 
     results = []

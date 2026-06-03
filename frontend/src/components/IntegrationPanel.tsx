@@ -8,6 +8,7 @@ import { notify } from "../lib/toast";
 import {
   isSupported,
   pickVaultFolder,
+  checkVaultPermission,
   getSavedVault,
   writeNote,
   obsidianUri,
@@ -49,7 +50,8 @@ const COPY = {
     exportMd: "Exportar .md",
     exporting: "Exportando…",
     downloaded: "Descargado!",
-    noFsapi: "Tu navegador no soporta seleccionar carpeta.",
+    noFsapi: "Tu navegador no soporta seleccionar carpeta. Usa Chrome o Edge.",
+    permDenied: "Permiso denegado. Haz clic en 'Cambiar' y acepta el acceso.",
     pickFolder: "Elegir carpeta de Obsidian",
     vaultFolder: "Carpeta",
     changeFolder: "Cambiar",
@@ -87,7 +89,8 @@ const COPY = {
     exportMd: "Export .md",
     exporting: "Exporting…",
     downloaded: "Downloaded!",
-    noFsapi: "Your browser does not support folder selection.",
+    noFsapi: "Your browser does not support folder selection. Use Chrome or Edge.",
+    permDenied: "Permission denied. Click 'Change' and allow access.",
     pickFolder: "Choose Obsidian folder",
     vaultFolder: "Folder",
     changeFolder: "Change",
@@ -147,13 +150,18 @@ export default function IntegrationPanel({
 
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Load saved vault on mount
+  // Load saved vault on mount — query permission only (no user gesture available here)
   useEffect(() => {
     if (!fsSupported) return;
-    getSavedVault().then((v) => {
+    checkVaultPermission().then((v) => {
       if (v) {
         setVaultName(v.name);
-        setVaultHandle(v.handle);
+        // Only set handle if permission is already granted; otherwise wait for user interaction
+        const ph = v.handle as unknown as { queryPermission(o: { mode: string }): Promise<string> };
+        ph.queryPermission({ mode: "readwrite" }).then((p) => {
+          if (p === "granted") setVaultHandle(v.handle);
+          else setVaultHandle(null); // show folder name but disable write until re-granted
+        }).catch(() => {});
       }
     }).catch(() => {});
   }, [fsSupported]);
@@ -211,19 +219,22 @@ export default function IntegrationPanel({
   }
 
   async function handlePickFolder() {
+    // showDirectoryPicker must be called synchronously from the click event.
+    // Clear error and call picker immediately — no awaits before this point.
     setErrorMsg("");
     try {
-      const { name } = await pickVaultFolder();
-      const vault = await getSavedVault();
-      if (vault) {
-        setVaultName(vault.name);
-        setVaultHandle(vault.handle);
-      } else {
-        setVaultName(name);
-      }
+      // pickVaultFolder calls window.showDirectoryPicker (bound to window) and persists the handle
+      const { handle, name } = await pickVaultFolder();
+      setVaultHandle(handle);
+      setVaultName(name);
     } catch (e) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        setErrorMsg(e.message);
+      if (e instanceof Error) {
+        if (e.name === "AbortError") return; // user cancelled — no error shown
+        if (e.name === "NotAllowedError" || e.message.toLowerCase().includes("permission")) {
+          setErrorMsg(t.permDenied);
+        } else {
+          setErrorMsg(e.message);
+        }
       }
     }
   }
@@ -232,9 +243,16 @@ export default function IntegrationPanel({
     if (!vaultHandle || !vaultName) return;
     setObsVaultStatus("loading");
     try {
+      // Re-request permission in case it lapsed (this is a user-gesture handler so it's allowed)
+      const vault = await getSavedVault();
+      if (!vault) {
+        setObsVaultStatus("error");
+        setErrorMsg(t.permDenied);
+        return;
+      }
       const md = await getObsidianMarkdown(noteId);
       const stem = safeFilename(content.titulo ?? filename);
-      await writeNote(vaultHandle, `${stem}.md`, md);
+      await writeNote(vault.handle, `${stem}.md`, md);
       setObsUri(obsidianUri(vaultName, stem));
       setObsVaultStatus("done");
       notify.success(t.toastSavedObsidian);
@@ -376,7 +394,7 @@ export default function IntegrationPanel({
                 <span className="text-xs text-slate-500">{t.noFsapi}</span>
               </span>
             ) : !vaultHandle ? (
-              // No folder chosen yet — show export fallback + pick button
+              // No active handle — either never chosen or permission lapsed
               <span className="flex flex-wrap items-center gap-2">
                 <ActionBtn
                   icon={obsExportStatus === "loading" ? <Spinner size={14} /> : obsExportStatus === "done" ? <CheckCircle2 size={14} /> : <FileCode2 size={14} />}
@@ -385,9 +403,14 @@ export default function IntegrationPanel({
                   disabled={obsExportStatus === "loading"}
                   variant="secondary"
                 />
+                {vaultName && (
+                  <span className="text-xs text-slate-500">
+                    {t.vaultFolder}: <span className="text-slate-400">{vaultName}</span>
+                  </span>
+                )}
                 <ActionBtn
                   icon={<FolderOpen size={14} />}
-                  label={t.pickFolder}
+                  label={vaultName ? t.changeFolder : t.pickFolder}
                   onClick={handlePickFolder}
                   variant="secondary"
                 />
