@@ -91,7 +91,7 @@ export default function SearchPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-3xl w-full mx-auto">
+      <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-4 md:px-gutter pb-xl max-w-3xl w-full mx-auto overflow-x-hidden">
       <h1 className="text-2xl font-bold text-on-background mb-1 flex items-center gap-2">
         <Sparkles size={22} className="text-primary" />
         {t.title}
@@ -141,17 +141,17 @@ export default function SearchPage() {
             onClick={() => openNote(r.note_id)}
             className="w-full text-left bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant hover:border-primary/40 rounded-xl p-4 transition-all group"
           >
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {r.image_ext && (
                 <img
                   src={imageUrl(r.note_id)}
                   alt={r.title}
-                  className="w-14 h-14 object-cover rounded-lg border border-outline-variant shrink-0"
+                  className="w-12 h-12 md:w-14 md:h-14 object-cover rounded-lg border border-outline-variant shrink-0"
                   loading="lazy"
                 />
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 flex-wrap">
                   <h3 className="font-semibold text-on-surface text-sm group-hover:text-primary transition-colors">
                     {r.title}
                   </h3>

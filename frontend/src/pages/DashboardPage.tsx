@@ -112,11 +112,11 @@ export default function DashboardPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 mt-16 p-gutter pb-xl overflow-y-auto">
+      <main className="flex-1 mt-16 px-4 py-6 md:p-gutter pb-xl overflow-y-auto">
         <div className="max-w-container-max mx-auto">
           {/* Welcome Header */}
           <header className="mb-lg">
-            <h2 className="text-display-lg text-primary mb-2">{t.welcome}</h2>
+            <h2 className="text-headline-lg md:text-display-lg text-primary mb-2">{t.welcome}</h2>
             <p className="text-body-lg text-on-surface-variant">{t.overview}</p>
           </header>
 
@@ -146,7 +146,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-lg">
             {/* Recent Notes */}
             <section className="xl:col-span-2">
-              <div className="flex justify-between items-end mb-md border-b border-outline-variant/30 pb-2">
+              <div className="flex flex-wrap justify-between items-end mb-md border-b border-outline-variant/30 pb-2 gap-2">
                 <h3 className="text-headline-md text-on-surface">{t.recentNotes}</h3>
                 <button
                   onClick={() => navigate("/library")}

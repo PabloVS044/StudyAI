@@ -498,8 +498,8 @@ export default function IntegrationsPage() {
 
       {/* Notion modal */}
       {notionModal.kind !== "none" && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="bg-surface rounded-xl p-6 w-full max-w-sm shadow-xl border border-surface-variant flex flex-col gap-4">
+        <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+          <div className="bg-surface rounded-t-2xl sm:rounded-xl p-6 w-full sm:max-w-sm shadow-xl border border-surface-variant flex flex-col gap-4">
             {notionModal.kind === "new-book" && (
               <>
                 <h4 className="text-headline-sm text-on-surface">{t.modalNewBook}</h4>
@@ -595,8 +595,8 @@ export default function IntegrationsPage() {
 
       {/* Drive modal */}
       {driveModal.kind !== "none" && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="bg-surface rounded-xl p-6 w-full max-w-sm shadow-xl border border-surface-variant flex flex-col gap-4">
+        <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+          <div className="bg-surface rounded-t-2xl sm:rounded-xl p-6 w-full sm:max-w-sm shadow-xl border border-surface-variant flex flex-col gap-4">
             {driveModal.kind === "new-folder" && (
               <>
                 <h4 className="text-headline-sm text-on-surface">{t.modalNewFolder}</h4>
@@ -675,12 +675,12 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      <main className="flex-1 ml-0 md:ml-64 pt-24 px-gutter pb-xl flex justify-center">
+      <main className="flex-1 ml-0 md:ml-64 pt-20 md:pt-24 px-4 md:px-gutter pb-xl flex justify-center">
         <div className="w-full max-w-container-max flex flex-col gap-lg">
           {/* Page Header */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <h2 className="text-display-lg text-primary mb-2">{t.pageTitle}</h2>
+              <h2 className="text-2xl md:text-display-lg text-primary mb-2">{t.pageTitle}</h2>
               <p className="text-body-lg text-on-surface-variant max-w-2xl">{t.pageSubtitle}</p>
             </div>
           </div>
@@ -696,7 +696,7 @@ export default function IntegrationsPage() {
                 {loading && <span className="text-caption text-outline animate-pulse">{t.checkingStatuses}</span>}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md min-w-0">
 
                 {/* Obsidian card */}
                 <div className="bg-surface rounded-xl p-md border border-surface-variant shadow-[0_2px_4px_rgba(21,69,57,0.05)] flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300">
@@ -956,7 +956,7 @@ export default function IntegrationsPage() {
                 {t.quickExport}
               </h3>
 
-              <div className="bg-surface rounded-xl p-md border border-surface-variant shadow-[0_4px_16px_rgba(21,69,57,0.08)] sticky top-24">
+              <div className="bg-surface rounded-xl p-md border border-surface-variant shadow-[0_4px_16px_rgba(21,69,57,0.08)] lg:sticky lg:top-24">
                 <p className="text-body-md text-on-surface-variant mb-6">{t.exportDesc}</p>
                 <div className="flex flex-col gap-3">
                   {t.exportFormats.map((fmt, i) => (

@@ -121,7 +121,7 @@ export default function FlashcardsPage() {
   return (
     <>
       <TopBar searchPlaceholder={t.searchPlaceholder} />
-      <main className="flex-1 mt-16 p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64">
+      <main className="flex-1 mt-16 px-4 py-4 md:p-gutter w-full max-w-container-max mx-auto ml-0 md:ml-64 overflow-x-hidden">
 
         {/* Header & note selector */}
         <div className="mb-md flex flex-col sm:flex-row sm:justify-between sm:items-end gap-md">
@@ -144,7 +144,7 @@ export default function FlashcardsPage() {
         </div>
 
         {/* Note selector panel */}
-        <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-md mb-gutter flex flex-col sm:flex-row gap-md items-end">
+        <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-sm p-4 md:p-md mb-4 md:mb-gutter flex flex-col sm:flex-row gap-3 md:gap-md items-stretch sm:items-end">
           <div className="flex-1">
             <label className="block text-label-md text-on-surface mb-xs">{t.note}</label>
             {notesLoading ? (
@@ -213,7 +213,7 @@ export default function FlashcardsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
             {/* Main Stage: Active Card (8 cols) */}
             <div className="lg:col-span-8 flex flex-col">
-              <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-[0_4px_24px_-4px_rgba(21,69,57,0.05)] flex-1 min-h-[500px] flex flex-col relative overflow-hidden transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-4px_rgba(21,69,57,0.08)]">
+              <div className="bg-surface rounded-xl border border-outline-variant/20 shadow-[0_4px_24px_-4px_rgba(21,69,57,0.05)] flex-1 min-h-[320px] md:min-h-[500px] flex flex-col relative overflow-hidden transition-all hover:-translate-y-1 hover:shadow-[0_8px_32px_-4px_rgba(21,69,57,0.08)]">
                 {/* Top Progress Bar */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-surface-container-high">
                   <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progressPercent}%` }} />
@@ -221,7 +221,7 @@ export default function FlashcardsPage() {
 
                 {/* Card Content */}
                 <div
-                  className="p-xl flex-1 flex flex-col justify-center items-center text-center cursor-pointer select-none"
+                  className="p-4 md:p-xl flex-1 flex flex-col justify-center items-center text-center cursor-pointer select-none"
                   onClick={() => setFlipped((f) => !f)}
                 >
                   {!flipped ? (
@@ -253,30 +253,30 @@ export default function FlashcardsPage() {
                 </div>
 
                 {/* Navigation */}
-                <div className="bg-surface-container-lowest border-t border-outline-variant/20 p-md flex justify-between items-center gap-md">
+                <div className="bg-surface-container-lowest border-t border-outline-variant/20 p-3 md:p-md flex justify-between items-center gap-2 md:gap-md">
                   <button
                     onClick={prev}
                     disabled={cardIndex === 0}
-                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors text-label-md"
+                    className="flex items-center gap-xs px-3 md:px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30 transition-colors text-label-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-                    {t.prev}
+                    <span className="hidden sm:inline">{t.prev}</span>
                   </button>
 
                   <button
                     onClick={() => setFlipped((f) => !f)}
-                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high transition-colors text-label-md"
+                    className="flex items-center gap-xs px-3 md:px-md py-sm rounded-lg bg-surface-container border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high transition-colors text-label-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">flip</span>
-                    {flipped ? t.flipToQ : t.flipToA}
+                    <span className="hidden sm:inline">{flipped ? t.flipToQ : t.flipToA}</span>
                   </button>
 
                   <button
                     onClick={next}
                     disabled={cardIndex === total - 1}
-                    className="flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary shadow-sm hover:opacity-90 disabled:opacity-30 transition-all text-label-md"
+                    className="flex items-center gap-xs px-3 md:px-md py-sm rounded-lg bg-primary text-on-primary shadow-sm hover:opacity-90 disabled:opacity-30 transition-all text-label-md"
                   >
-                    {t.next}
+                    <span className="hidden sm:inline">{t.next}</span>
                     <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                   </button>
                 </div>

@@ -23,6 +23,11 @@ export default function TopBar({ searchPlaceholder }: { searchPlaceholder?: stri
   return (
     <header className="bg-surface-bright/80 backdrop-blur-md shadow-sm fixed top-0 right-0 left-0 md:left-64 z-40 flex justify-between items-center h-16 px-gutter w-full md:max-w-[calc(100%-16rem)]">
       <div className="flex items-center gap-md flex-1">
+        {/* Mobile brand - only visible when sidebar is hidden */}
+        <div className="flex md:hidden items-center gap-2 shrink-0">
+          <img src="/logo.png" alt="StudyAI" className="w-7 h-7 rounded-md object-cover" />
+          <span className="text-primary font-extrabold text-base tracking-tight">StudyAI</span>
+        </div>
         <div className="relative hidden sm:block max-w-md w-full">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
           <input
