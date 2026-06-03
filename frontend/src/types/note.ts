@@ -126,3 +126,20 @@ export interface ExamResult {
   difficulty: string;
   source: { notebook_id?: number; note_ids?: string[] };
 }
+
+export interface ConceptMapNode {
+  id: string;
+  label: string;
+}
+
+export interface ConceptMapEdge {
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface ConceptMap {
+  note_id: string;
+  nodes: ConceptMapNode[];
+  edges: ConceptMapEdge[];
+}

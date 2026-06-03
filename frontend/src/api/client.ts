@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExamResult, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, Notebook, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
+import type { AppConfig, ConceptMap, ExamResult, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, Notebook, QuizResult, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
 const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
@@ -313,6 +313,11 @@ export function assignNotesToNotebook(id: number, noteIds: string[]): Promise<{ 
 
 export function removeNoteFromNotebook(id: number, noteId: string): Promise<{ removed: boolean; note_id: string }> {
   return req(`/api/notebooks/${id}/notes/${noteId}`, { method: "DELETE" });
+}
+
+// ── Concept Maps ─────────────────────────────────────────────────────────────
+export function generateConceptMap(noteId: string): Promise<ConceptMap> {
+  return req(`/api/concept-maps/${noteId}/generate`, { method: "POST" });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

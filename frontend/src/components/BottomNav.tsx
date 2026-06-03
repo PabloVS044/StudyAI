@@ -2,30 +2,35 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppSettings } from "../context/AppSettings";
 
-const PRIMARY_ROUTES = ["/dashboard", "/capture", "/library", "/tests", "/ai-assistant"];
+// Primary slots shown in bottom bar (5 max including "More" button = 4 nav items)
+const PRIMARY_ROUTES = ["/dashboard", "/capture", "/library", "/ai-summaries", "/ai-assistant"];
 
 const NAV_ITEMS = {
   es: [
-    { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
-    { to: "/capture", label: "Capturar", icon: "add_a_photo" },
-    { to: "/library", label: "Biblioteca", icon: "library_books" },
-    { to: "/search", label: "Buscar", icon: "search" },
-    { to: "/ai-summaries", label: "Resumenes IA", icon: "psychology" },
-    { to: "/flashcards", label: "Flashcards", icon: "quiz" },
-    { to: "/tests", label: "Tests", icon: "fact_check" },
-    { to: "/integrations", label: "Integraciones", icon: "extension" },
-    { to: "/ai-assistant", label: "Asistente IA", icon: "chat" },
+    { to: "/dashboard",    label: "Dashboard",         icon: "dashboard" },
+    { to: "/notebooks",    label: "Libros",             icon: "menu_book" },
+    { to: "/capture",      label: "Capturar",           icon: "add_a_photo" },
+    { to: "/search",       label: "Buscar",             icon: "search" },
+    { to: "/library",      label: "Biblioteca",         icon: "library_books" },
+    { to: "/ai-summaries", label: "Resumenes IA",       icon: "psychology" },
+    { to: "/flashcards",   label: "Flashcards",         icon: "quiz" },
+    { to: "/tests",        label: "Tests",              icon: "fact_check" },
+    { to: "/concept-maps", label: "Mapas",              icon: "hub" },
+    { to: "/ai-assistant", label: "Asistente IA",       icon: "chat" },
+    { to: "/integrations", label: "Integraciones",      icon: "extension" },
   ],
   en: [
-    { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
-    { to: "/capture", label: "Capture", icon: "add_a_photo" },
-    { to: "/library", label: "Library", icon: "library_books" },
-    { to: "/search", label: "Search", icon: "search" },
-    { to: "/ai-summaries", label: "AI Summaries", icon: "psychology" },
-    { to: "/flashcards", label: "Flashcards", icon: "quiz" },
-    { to: "/tests", label: "Tests", icon: "fact_check" },
-    { to: "/integrations", label: "Integrations", icon: "extension" },
-    { to: "/ai-assistant", label: "AI Assistant", icon: "chat" },
+    { to: "/dashboard",    label: "Dashboard",          icon: "dashboard" },
+    { to: "/notebooks",    label: "Notebooks",          icon: "menu_book" },
+    { to: "/capture",      label: "Capture",            icon: "add_a_photo" },
+    { to: "/search",       label: "Search",             icon: "search" },
+    { to: "/library",      label: "Library",            icon: "library_books" },
+    { to: "/ai-summaries", label: "AI Summaries",       icon: "psychology" },
+    { to: "/flashcards",   label: "Flashcards",         icon: "quiz" },
+    { to: "/tests",        label: "Tests",              icon: "fact_check" },
+    { to: "/concept-maps", label: "Maps",               icon: "hub" },
+    { to: "/ai-assistant", label: "AI Assistant",       icon: "chat" },
+    { to: "/integrations", label: "Integrations",       icon: "extension" },
   ],
 } as const;
 

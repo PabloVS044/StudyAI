@@ -7,6 +7,7 @@ import { useAppSettings } from "../context/AppSettings";
 const COPY = {
   es: {
     searchPlaceholder: "Buscar resumenes...",
+    filterPlaceholder: "Filtrar notas...",
     notesTitle: "Notas",
     loadingNotes: "Cargando notas...",
     emptyNotes: "No hay notas disponibles.",
@@ -24,6 +25,7 @@ const COPY = {
   },
   en: {
     searchPlaceholder: "Search summaries...",
+    filterPlaceholder: "Filter notes...",
     notesTitle: "Notes",
     loadingNotes: "Loading notes...",
     emptyNotes: "No notes available.",
@@ -116,6 +118,7 @@ export default function AISummariesPage() {
   const t = COPY[lang];
 
   const [notes, setNotes] = useState<NoteListItem[]>([]);
+  const [noteSearch, setNoteSearch] = useState("");
   const [selectedNote, setSelectedNote] = useState<NoteListItem | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -159,8 +162,27 @@ export default function AISummariesPage() {
       <main className="flex-1 mt-16 ml-0 md:ml-64 flex flex-col md:flex-row h-[calc(100vh-4rem)] overflow-hidden">
         {/* Left Pane: Notes List */}
         <aside className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-outline-variant/30 flex flex-col bg-surface overflow-hidden shrink-0 max-h-[40vh] md:max-h-none">
-          <div className="p-md flex flex-col gap-4 border-b border-outline-variant/30">
+          <div className="p-md flex flex-col gap-3 border-b border-outline-variant/30">
             <h2 className="text-headline-md text-primary">{t.notesTitle}</h2>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container border border-outline-variant/30 focus-within:border-primary/50 transition-colors">
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant/60 shrink-0">search</span>
+              <input
+                type="text"
+                value={noteSearch}
+                onChange={(e) => setNoteSearch(e.target.value)}
+                placeholder={t.filterPlaceholder}
+                className="flex-1 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant/50 outline-none min-w-0"
+              />
+              {noteSearch && (
+                <button
+                  onClick={() => setNoteSearch("")}
+                  className="text-on-surface-variant/50 hover:text-on-surface-variant transition-colors"
+                  aria-label="Clear filter"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-sm flex flex-col gap-2 custom-scrollbar">
@@ -173,7 +195,7 @@ export default function AISummariesPage() {
             {!notesLoading && notes.length === 0 && (
               <p className="p-4 text-body-md text-on-surface-variant">{t.emptyNotes}</p>
             )}
-            {notes.map((note) => {
+            {notes.filter((n) => n.title.toLowerCase().includes(noteSearch.toLowerCase())).map((note) => {
               const isActive = selectedNote?.note_id === note.note_id;
               return (
                 <div
