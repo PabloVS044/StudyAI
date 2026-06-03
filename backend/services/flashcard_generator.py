@@ -71,6 +71,7 @@ def generate_flashcards(api_key: str, content: dict, count: int = 10) -> list[di
         raw = re.sub(r"\n?```$", "", raw)
     raw = raw.strip()
     raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw)
+    raw = re.sub(r'\\(?!["\\/u])', r'\\\\', raw)  # escapa LaTeX (\frac, \alpha...) invalido en JSON
 
     try:
         cards = json.loads(raw, strict=False)

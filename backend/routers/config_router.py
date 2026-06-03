@@ -9,7 +9,8 @@ router = APIRouter()
 @router.get("")
 async def get_config():
     return {
-        "notion": settings.notion_enabled,
+        # notion ahora refleja el OAuth multi-tenant (no el token global legacy)
+        "notion": settings.notion_oauth_enabled,
         "drive": settings.drive_enabled,
         "obsidian": settings.obsidian_enabled,
         "pinecone": bool(settings.PINECONE_API_KEY),
