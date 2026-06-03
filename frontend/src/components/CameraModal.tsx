@@ -1,5 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, X, RotateCcw, Check } from "lucide-react";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    title: "Captura con cámara",
+    errPermission: "Permiso de cámara denegado. Actívalo en la configuración de tu navegador.",
+    errNotFound: "No se detectó cámara en este dispositivo.",
+    errGeneric: "Error al acceder a la cámara. Intenta recargar la página.",
+    close: "Cerrar",
+    preview: "Vista previa",
+    capture: "Capturar foto",
+    cancel: "Cancelar",
+    use: "Usar foto",
+    retake: "Repetir",
+  },
+  en: {
+    title: "Camera capture",
+    errPermission: "Camera permission denied. Enable it in your browser settings.",
+    errNotFound: "No camera detected on this device.",
+    errGeneric: "Error accessing the camera. Try reloading the page.",
+    close: "Close",
+    preview: "Preview",
+    capture: "Take photo",
+    cancel: "Cancel",
+    use: "Use photo",
+    retake: "Retake",
+  },
+} as const;
 
 interface Props {
   onCapture: (file: File) => void;
@@ -9,6 +37,8 @@ interface Props {
 type Stage = "streaming" | "previewing" | "error";
 
 export default function CameraModal({ onCapture, onClose }: Props) {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -35,11 +65,11 @@ export default function CameraModal({ onCapture, onClose }: Props) {
         if (!active) return;
         const msg = err instanceof Error ? err.message : "";
         if (/NotAllowed|Permission/i.test(msg)) {
-          setErrorMsg("Permiso de cámara denegado. Actívalo en la configuración de tu navegador.");
+          setErrorMsg(t.errPermission);
         } else if (/NotFound|DevicesNotFound/i.test(msg)) {
-          setErrorMsg("No se detectó cámara en este dispositivo.");
+          setErrorMsg(t.errNotFound);
         } else {
-          setErrorMsg("Error al acceder a la cámara. Intenta recargar la página.");
+          setErrorMsg(t.errGeneric);
         }
         setStage("error");
       }
@@ -90,7 +120,7 @@ export default function CameraModal({ onCapture, onClose }: Props) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
           <div className="flex items-center gap-2">
             <Camera size={18} className="text-violet-400" />
-            <span className="font-semibold text-white text-sm">Captura con cámara</span>
+            <span className="font-semibold text-white text-sm">{t.title}</span>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <X size={20} />
@@ -107,7 +137,7 @@ export default function CameraModal({ onCapture, onClose }: Props) {
                 onClick={onClose}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors"
               >
-                Cerrar
+                {t.close}
               </button>
             </div>
           ) : (
@@ -126,7 +156,7 @@ export default function CameraModal({ onCapture, onClose }: Props) {
                 />
                 {stage === "previewing" && (
                   <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                    Vista previa
+                    {t.preview}
                   </div>
                 )}
               </div>
@@ -139,13 +169,13 @@ export default function CameraModal({ onCapture, onClose }: Props) {
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-700 rounded-lg font-semibold text-sm transition-colors"
                     >
                       <span className="w-3 h-3 rounded-full bg-white inline-block" />
-                      Capturar foto
+                      {t.capture}
                     </button>
                     <button
                       onClick={onClose}
                       className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors"
                     >
-                      Cancelar
+                      {t.cancel}
                     </button>
                   </>
                 ) : (
@@ -155,14 +185,14 @@ export default function CameraModal({ onCapture, onClose }: Props) {
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-700 rounded-lg font-semibold text-sm transition-colors"
                     >
                       <Check size={16} />
-                      Usar foto
+                      {t.use}
                     </button>
                     <button
                       onClick={handleRetake}
                       className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm transition-colors"
                     >
                       <RotateCcw size={14} />
-                      Repetir
+                      {t.retake}
                     </button>
                   </>
                 )}

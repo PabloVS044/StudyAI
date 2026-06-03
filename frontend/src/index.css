@@ -2,9 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Light palette (hex → R G B triplets) ── */
+:root {
+  --c-primary:                    21 69 57;    /* #154539 */
+  --c-primary-container:          47 93 80;    /* #2f5d50 */
+  --c-primary-fixed:              188 237 220; /* #bceddc */
+  --c-primary-fixed-dim:          160 209 192; /* #a0d1c0 */
+  --c-on-primary:                 255 255 255; /* #ffffff */
+  --c-on-primary-container:       163 212 195; /* #a3d4c3 */
+  --c-on-primary-fixed:           0 32 25;     /* #002019 */
+  --c-on-primary-fixed-variant:   32 79 66;    /* #204f42 */
+
+  --c-secondary:                  74 99 97;    /* #4a6361 */
+  --c-secondary-container:        202 229 226; /* #cae5e2 */
+  --c-secondary-fixed:            205 232 229; /* #cde8e5 */
+  --c-secondary-fixed-dim:        177 204 201; /* #b1ccc9 */
+  --c-on-secondary:               255 255 255; /* #ffffff */
+  --c-on-secondary-container:     79 103 101;  /* #4f6765 */
+  --c-on-secondary-fixed:         6 31 30;     /* #061f1e */
+  --c-on-secondary-fixed-variant: 51 75 73;    /* #334b49 */
+
+  --c-tertiary:                   93 50 42;    /* #5d322a */
+  --c-tertiary-container:         120 72 64;   /* #784840 */
+  --c-tertiary-fixed:             255 218 212; /* #ffdad4 */
+  --c-tertiary-fixed-dim:         247 183 172; /* #f7b7ac */
+  --c-on-tertiary:                255 255 255; /* #ffffff */
+  --c-on-tertiary-container:      251 186 175; /* #fbbaaf */
+  --c-on-tertiary-fixed:          51 17 11;    /* #33110b */
+  --c-on-tertiary-fixed-variant:  104 58 51;   /* #683a33 */
+
+  --c-surface:                    249 250 247; /* #f9faf7 */
+  --c-surface-bright:             249 250 247; /* #f9faf7 */
+  --c-surface-container-lowest:   255 255 255; /* #ffffff */
+  --c-surface-container-low:      243 244 241; /* #f3f4f1 */
+  --c-surface-container:          237 238 236; /* #edeeec */
+  --c-surface-container-high:     231 232 230; /* #e7e8e6 */
+  --c-surface-container-highest:  226 227 224; /* #e2e3e0 */
+  --c-surface-variant:            226 227 224; /* #e2e3e0 */
+  --c-surface-tint:               57 103 89;   /* #396759 */
+  --c-surface-dim:                217 218 216; /* #d9dad8 */
+
+  --c-background:                 249 250 247; /* #f9faf7 */
+  --c-on-background:              26 28 27;    /* #1a1c1b */
+  --c-on-surface:                 26 28 27;    /* #1a1c1b */
+  --c-on-surface-variant:         64 73 69;    /* #404945 */
+  --c-inverse-surface:            46 49 48;    /* #2e3130 */
+  --c-inverse-on-surface:         240 241 238; /* #f0f1ee */
+  --c-inverse-primary:            160 209 192; /* #a0d1c0 */
+
+  --c-error:                      186 26 26;   /* #ba1a1a */
+  --c-error-container:            255 218 214; /* #ffdad6 */
+  --c-on-error:                   255 255 255; /* #ffffff */
+  --c-on-error-container:         147 0 10;    /* #93000a */
+
+  --c-outline:                    113 121 117; /* #717975 */
+  --c-outline-variant:            192 200 196; /* #c0c8c4 */
+}
+
+/* ── Dark palette (Material dark, green theme) ── */
+.dark {
+  --c-primary:                    160 209 192; /* #a0d1c0 — lighter primary */
+  --c-primary-container:          28 58 47;    /* #1c3a2f */
+  --c-primary-fixed:              188 237 220; /* #bceddc — fixed stays */
+  --c-primary-fixed-dim:          160 209 192; /* #a0d1c0 */
+  --c-on-primary:                 0 37 28;     /* #00251c */
+  --c-on-primary-container:       160 209 192; /* #a0d1c0 */
+  --c-on-primary-fixed:           0 32 25;     /* #002019 */
+  --c-on-primary-fixed-variant:   32 79 66;    /* #204f42 */
+
+  --c-secondary:                  177 204 201; /* #b1ccc9 */
+  --c-secondary-container:        40 60 58;    /* #283c3a */
+  --c-secondary-fixed:            205 232 229; /* #cde8e5 */
+  --c-secondary-fixed-dim:        177 204 201; /* #b1ccc9 */
+  --c-on-secondary:               18 38 37;    /* #122625 */
+  --c-on-secondary-container:     177 204 201; /* #b1ccc9 */
+  --c-on-secondary-fixed:         6 31 30;     /* #061f1e */
+  --c-on-secondary-fixed-variant: 51 75 73;    /* #334b49 */
+
+  --c-tertiary:                   247 183 172; /* #f7b7ac */
+  --c-tertiary-container:         78 35 28;    /* #4e231c */
+  --c-tertiary-fixed:             255 218 212; /* #ffdad4 */
+  --c-tertiary-fixed-dim:         247 183 172; /* #f7b7ac */
+  --c-on-tertiary:                68 22 15;    /* #44160f */
+  --c-on-tertiary-container:      247 183 172; /* #f7b7ac */
+  --c-on-tertiary-fixed:          51 17 11;    /* #33110b */
+  --c-on-tertiary-fixed-variant:  104 58 51;   /* #683a33 */
+
+  --c-surface:                    18 20 19;    /* #121413 */
+  --c-surface-bright:             36 39 38;    /* #242726 */
+  --c-surface-container-lowest:   13 15 14;    /* #0d0f0e */
+  --c-surface-container-low:      26 28 27;    /* #1a1c1b */
+  --c-surface-container:          30 33 31;    /* #1e211f */
+  --c-surface-container-high:     36 39 38;    /* #242726 */
+  --c-surface-container-highest:  42 45 44;    /* #2a2d2c */
+  --c-surface-variant:            64 73 69;    /* #404945 */
+  --c-surface-tint:               160 209 192; /* #a0d1c0 */
+  --c-surface-dim:                18 20 19;    /* #121413 */
+
+  --c-background:                 18 20 19;    /* #121413 */
+  --c-on-background:              224 227 224; /* #e0e3e0 */
+  --c-on-surface:                 224 227 224; /* #e0e3e0 */
+  --c-on-surface-variant:         192 200 196; /* #c0c8c4 */
+  --c-inverse-surface:            224 227 224; /* #e0e3e0 */
+  --c-inverse-on-surface:         46 49 48;    /* #2e3130 */
+  --c-inverse-primary:            21 69 57;    /* #154539 */
+
+  --c-error:                      255 180 171; /* #ffb4ab */
+  --c-error-container:            147 0 10;    /* #93000a */
+  --c-on-error:                   105 0 5;     /* #690005 */
+  --c-on-error-container:         255 218 214; /* #ffdad6 */
+
+  --c-outline:                    138 147 143; /* #8a938f */
+  --c-outline-variant:            64 73 69;    /* #404945 */
+}
+
 body {
-  background-color: #f9faf7;
-  color: #1a1c1b;
+  background-color: rgb(var(--c-background));
+  color: rgb(var(--c-on-background));
   font-family: 'Manrope', sans-serif;
 }
 
@@ -19,14 +133,14 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d9dad8; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #c0c8c4; }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-surface-dim)); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-outline-variant)); }
 
 /* Custom scrollbar for inner panes */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #d9dad8; border-radius: 10px; }
-.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: #c0c8c4; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgb(var(--c-surface-dim)); border-radius: 10px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgb(var(--c-outline-variant)); }
 
 /* Ink shadows */
 .ink-shadow-sm { box-shadow: 0 2px 4px rgba(21, 69, 57, 0.05); }

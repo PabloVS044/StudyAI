@@ -7,8 +7,34 @@ import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
 import TopBar from "../components/TopBar";
 import type { NoteDetail, SearchResultItem } from "../types/note";
+import { useAppSettings } from "../context/AppSettings";
+
+const COPY = {
+  es: {
+    searchPlaceholder: "Busca tus notas...",
+    title: "Búsqueda Semántica",
+    subtitle: "Busca por significado — no solo palabras exactas. Usa Pinecone + Mistral embeddings.",
+    inputPlaceholder: "Ej: derivadas, termodinámica, ciclo de Krebs…",
+    errorPinecone: "La búsqueda semántica necesita Pinecone y Mistral configurados en el backend.",
+    errorSearch: "Error en la búsqueda",
+    empty: "No se encontraron notas similares. Intenta con otros términos.",
+    loading: "Cargando…",
+  },
+  en: {
+    searchPlaceholder: "Search your notes...",
+    title: "Semantic Search",
+    subtitle: "Search by meaning — not just exact words. Powered by Pinecone + Mistral embeddings.",
+    inputPlaceholder: "E.g.: derivatives, thermodynamics, Krebs cycle…",
+    errorPinecone: "Semantic search requires Pinecone and Mistral configured in the backend.",
+    errorSearch: "Search error",
+    empty: "No similar notes found. Try different terms.",
+    loading: "Loading…",
+  },
+} as const;
 
 export default function SearchPage() {
+  const { lang } = useAppSettings();
+  const t = COPY[lang];
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -44,7 +70,7 @@ export default function SearchPage() {
       setResults(await searchNotes(q, 8));
       setSearched(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error en la búsqueda");
+      setError(e instanceof Error ? e.message : t.errorSearch);
     } finally {
       setLoading(false);
     }
@@ -64,14 +90,14 @@ export default function SearchPage() {
 
   return (
     <>
-      <TopBar searchPlaceholder="Search your notes..." />
+      <TopBar searchPlaceholder={t.searchPlaceholder} />
       <main className="flex-1 ml-0 md:ml-64 pt-[112px] px-gutter pb-xl max-w-3xl w-full mx-auto">
       <h1 className="text-2xl font-bold text-on-background mb-1 flex items-center gap-2">
         <Sparkles size={22} className="text-primary" />
-        Búsqueda Semántica
+        {t.title}
       </h1>
       <p className="text-on-surface-variant text-sm mb-6">
-        Busca por significado — no solo palabras exactas. Usa Pinecone + Mistral embeddings.
+        {t.subtitle}
       </p>
 
       {/* Search input */}
@@ -84,7 +110,7 @@ export default function SearchPage() {
         )}
         <input
           type="text"
-          placeholder="Ej: derivadas, termodinámica, ciclo de Krebs…"
+          placeholder={t.inputPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full bg-surface-container-lowest border border-outline-variant focus:border-primary rounded-xl pl-11 pr-11 py-3 text-sm text-on-surface placeholder:text-outline focus:outline-none transition-colors"
@@ -96,7 +122,7 @@ export default function SearchPage() {
       {error && (
         <div className="p-3 bg-error-container/70 border border-error/20 rounded-lg text-on-error-container text-sm mb-4">
           {isPineconeError
-            ? "La búsqueda semántica necesita Pinecone y Mistral configurados en el backend."
+            ? t.errorPinecone
             : error}
         </div>
       )}
@@ -104,7 +130,7 @@ export default function SearchPage() {
       {/* Results */}
       {searched && results.length === 0 && !loading && (
         <p className="text-on-surface-variant text-sm text-center py-8">
-          No se encontraron notas similares. Intenta con otros términos.
+          {t.empty}
         </p>
       )}
 
@@ -138,7 +164,7 @@ export default function SearchPage() {
                   </div>
                 </div>
                 <p className="text-xs text-outline mt-0.5 mb-1.5">
-                  {r.filename} · {r.date ? new Date(r.date).toLocaleDateString("es") : ""}
+                  {r.filename} · {r.date ? new Date(r.date).toLocaleDateString(lang) : ""}
                 </p>
                 <p className="text-xs text-on-surface-variant line-clamp-2">{r.text_preview}</p>
                 {(r.notion_url || r.drive_url) && (
@@ -166,7 +192,7 @@ export default function SearchPage() {
       </div>
 
       {/* Detail modal */}
-      <Modal open={!!selected || loadingDetail} onClose={() => setSelected(null)} title={selected?.title ?? "Cargando…"} wide>
+      <Modal open={!!selected || loadingDetail} onClose={() => setSelected(null)} title={selected?.title ?? t.loading} wide>
         {loadingDetail ? (
           <div className="flex justify-center py-10"><Spinner size={28} /></div>
         ) : selected ? (

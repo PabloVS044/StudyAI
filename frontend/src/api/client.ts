@@ -94,6 +94,14 @@ export function notionConnectUrl(): Promise<{ auth_url: string }> {
   return req("/api/integrations/notion/connect");
 }
 
+export function exchangeNotion(code: string, state: string): Promise<{ connected: boolean; account: string }> {
+  return req("/api/integrations/notion/exchange", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, state }),
+  });
+}
+
 export function listNotionParents(): Promise<{ id: string; title: string }[]> {
   return req("/api/integrations/notion/parents");
 }
@@ -149,6 +157,17 @@ export function selectDriveFolder(payload: { folder_id: string; name: string }):
 
 export function exportDrive(noteId: string): Promise<{ success: boolean; url: string }> {
   return req(`/api/integrations/drive/export/${noteId}`, { method: "POST" });
+}
+
+export async function getObsidianMarkdown(noteId: string): Promise<string> {
+  const headers: Record<string, string> = {};
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`, { headers });
+  if (!res.ok) throw new Error("Error al obtener markdown");
+  return res.text();
 }
 
 export async function exportObsidian(noteId: string): Promise<void> {

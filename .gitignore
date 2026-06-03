@@ -27,3 +27,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# ── Docs locales (no versionar) ───────────────────────────────────────────────
+SETUP.md
+INTEGRATIONS_NOTES.md
+StudyAI-Analisis-y-Brief.md
