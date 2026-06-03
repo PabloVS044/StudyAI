@@ -13,16 +13,26 @@ class Settings:
     # Optional integrations
     NOTION_TOKEN: str = os.environ.get("NOTION_TOKEN", "")
     NOTION_DATABASE_ID: str = os.environ.get("NOTION_DATABASE_ID", "")
-    GOOGLE_SERVICE_ACCOUNT_JSON: str = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.environ.get("GOOGLE_REDIRECT_URI", "")
+    GOOGLE_TOKEN_PATH: str = os.environ.get("GOOGLE_TOKEN_PATH", "google_token.json")
     GOOGLE_DRIVE_FOLDER_ID: str = os.environ.get("GOOGLE_DRIVE_FOLDER_ID", "")
     OBSIDIAN_VAULT_PATH: str = os.environ.get("OBSIDIAN_VAULT_PATH", "")
+    OBSIDIAN_VAULT_NAME: str = os.environ.get("OBSIDIAN_VAULT_NAME", "")
+
+    # Supabase
+    SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
+    SUPABASE_SERVICE_KEY: str = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+    # Clerk
+    CLERK_JWKS_URL: str = os.environ.get("CLERK_JWKS_URL", "")
 
     # Server
     CORS_ORIGINS: list[str] = os.environ.get(
         "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
     ).split(",")
     UPLOADS_DIR: str = os.environ.get("UPLOADS_DIR", "uploads")
-    DB_PATH: str = os.environ.get("DB_PATH", "studyai.db")
 
     @property
     def notion_enabled(self) -> bool:
@@ -30,8 +40,11 @@ class Settings:
 
     @property
     def drive_enabled(self) -> bool:
-        return bool(self.GOOGLE_SERVICE_ACCOUNT_JSON and
-                    os.path.exists(self.GOOGLE_SERVICE_ACCOUNT_JSON))
+        return bool(self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET)
+
+    @property
+    def drive_authenticated(self) -> bool:
+        return os.path.exists(self.GOOGLE_TOKEN_PATH)
 
     @property
     def obsidian_enabled(self) -> bool:

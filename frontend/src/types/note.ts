@@ -26,6 +26,7 @@ export interface NoteContent {
   diagramas_figuras: DiagramaFigura[];
   definiciones: Definicion[];
   observaciones?: string;
+  tags?: string[];
 }
 
 /** Returned by POST /api/extract (before saving). */
@@ -50,6 +51,7 @@ export interface NoteListItem {
   has_diagrams: boolean;
   notion_url?: string;
   drive_url?: string;
+  tags: string[];
 }
 
 /** Returned by GET /api/notes/:id (detail). */
@@ -62,6 +64,32 @@ export interface NoteDetail extends NoteListItem {
 /** Returned by POST /api/notes/search. */
 export interface SearchResultItem extends NoteListItem {
   score: number;
+}
+
+export interface Flashcard {
+  pregunta: string;
+  respuesta: string;
+}
+
+export interface FlashcardSet {
+  note_id: string;
+  flashcards: Flashcard[];
+}
+
+export interface SummaryResponse {
+  title: string;
+  summary: string;
+  key_concepts: string[];
+  note_ids: string[];
+  style: string;
+}
+
+export interface SummaryNoteItem {
+  note_id: string;
+  title: string;
+  filename: string;
+  date: string;
+  tags: string[];
 }
 
 export interface AppConfig {

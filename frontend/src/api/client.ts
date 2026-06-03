@@ -1,10 +1,24 @@
 /// <reference types="vite/client" />
-import type { AppConfig, ExtractResult, NoteDetail, NoteListItem, SearchResultItem } from "../types/note";
+import type { AppConfig, ExtractResult, FlashcardSet, NoteDetail, NoteListItem, SearchResultItem, SummaryNoteItem, SummaryResponse } from "../types/note";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
+type TokenProvider = () => Promise<string | null>;
+let _tokenProvider: TokenProvider | null = null;
+
+export function setTokenProvider(fn: TokenProvider) {
+  _tokenProvider = fn;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, init);
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string>),
+  };
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     let msg = res.statusText;
     try { msg = (await res.json()).detail ?? msg; } catch { /* ignore */ }
@@ -54,6 +68,13 @@ export function searchNotes(query: string, topK = 5): Promise<SearchResultItem[]
   });
 }
 
+// ── Summaries ────────────────────────────────────────────────────────────────
+export interface SummaryRequest {
+  note_ids: string[];
+  style?: "brief" | "detailed" | "bullet_points";
+  language?: string;
+}
+
 // ── Integrations ──────────────────────────────────────────────────────────────
 export function syncNotion(noteId: string): Promise<{ success: boolean; url: string }> {
   return req(`/api/integrations/notion/${noteId}`, { method: "POST" });
@@ -63,8 +84,26 @@ export function syncDrive(noteId: string): Promise<{ success: boolean; url: stri
   return req(`/api/integrations/drive/${noteId}`, { method: "POST" });
 }
 
+export function getGoogleAuthUrl(): Promise<{ auth_url: string }> {
+  return req("/api/integrations/google/auth-url");
+}
+
+export function validateIntegrations(): Promise<{
+  mistral: boolean;
+  pinecone: boolean;
+  notion: boolean;
+  drive: boolean;
+}> {
+  return req("/api/integrations/validate", { method: "POST" });
+}
+
 export async function exportObsidian(noteId: string): Promise<void> {
-  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`);
+  const headers: Record<string, string> = {};
+  if (_tokenProvider) {
+    const token = await _tokenProvider();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}/api/integrations/obsidian/${noteId}/export`, { headers });
   if (!res.ok) throw new Error("Error al exportar");
   const blob = await res.blob();
   const disp = res.headers.get("Content-Disposition") ?? "";
@@ -78,13 +117,42 @@ export async function exportObsidian(noteId: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-export function saveObsidianVault(noteId: string): Promise<{ success: boolean; path: string }> {
+export function saveObsidianVault(noteId: string): Promise<{ success: boolean; path: string; obsidian_uri: string }> {
   return req(`/api/integrations/obsidian/${noteId}/save-vault`, { method: "POST" });
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
 export function getConfig(): Promise<AppConfig> {
   return req("/api/config");
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+export function chatRag(question: string): Promise<{
+  answer: string;
+  sources: { note_id: string; title: string; score: number }[];
+}> {
+  return req("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+}
+
+// ── Flashcards & Summaries (Supabase stack) ───────────────────────────────────
+export function generateFlashcards(noteId: string, count = 10): Promise<FlashcardSet> {
+  return req(`/api/flashcards/${noteId}/generate?count=${count}`, { method: "POST" });
+}
+
+export function generateSummary(payload: SummaryRequest): Promise<SummaryResponse> {
+  return req("/api/summaries/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listSummaryNotes(): Promise<SummaryNoteItem[]> {
+  return req("/api/summaries/list");
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

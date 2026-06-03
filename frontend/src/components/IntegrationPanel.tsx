@@ -52,6 +52,7 @@ export default function IntegrationPanel({
 
   const [obsExportStatus, setObsExportStatus] = useState<Status>("idle");
   const [obsVaultStatus, setObsVaultStatus] = useState<Status>("idle");
+  const [obsUri, setObsUri] = useState("");
 
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -112,7 +113,8 @@ export default function IntegrationPanel({
     setObsVaultStatus("loading");
     setErrorMsg("");
     try {
-      await saveObsidianVault(noteId);
+      const res = await saveObsidianVault(noteId);
+      setObsUri(res.obsidian_uri);
       setObsVaultStatus("done");
     } catch (e) {
       setObsVaultStatus("error");
@@ -231,8 +233,16 @@ export default function IntegrationPanel({
         {/* Obsidian vault */}
         {cfg.obsidian && saved && (
           obsVaultStatus === "done" ? (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-              <CheckCircle2 size={14} /> Guardado en Vault
+            <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+                <CheckCircle2 size={14} /> Guardado en Vault
+              </span>
+              {obsUri && (
+                <a href={obsUri}
+                  className="flex items-center gap-1.5 text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors text-slate-200">
+                  <ExternalLink size={13} /> Abrir en Obsidian
+                </a>
+              )}
             </span>
           ) : (
             <ActionBtn

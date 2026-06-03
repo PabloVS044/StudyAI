@@ -2,7 +2,11 @@
 import base64
 import re
 import json
-from mistralai import Mistral
+
+try:
+    from mistralai import Mistral
+except ImportError:
+    from mistralai.client import Mistral
 
 _PROMPT = """Analiza esta imagen de apuntes de clase y extrae TODO el contenido de forma estructurada.
 
@@ -22,7 +26,8 @@ Devuelve un JSON con exactamente esta estructura:
   "definiciones": [
     {"termino": "término", "definicion": "definición"}
   ],
-  "observaciones": "notas adicionales, subrayados importantes, anotaciones al margen"
+  "observaciones": "notas adicionales, subrayados importantes, anotaciones al margen",
+  "tags": ["Tag1", "Tag2", "Tag3"]
 }
 
 Reglas:
@@ -30,6 +35,7 @@ Reglas:
 - Las fórmulas matemáticas SIEMPRE en LaTeX válido
 - Transcribe TODO el texto visible, incluyendo texto pequeño y anotaciones
 - Para diagramas, describe lo que representan con detalle
+- "tags": array de 2-4 etiquetas que clasifiquen la materia/tema (ej: "Biología", "Cálculo", "Historia", "Química Orgánica", "Álgebra Lineal"). Máximo 4, mínimo 1. En español, capitalizadas.
 - Responde ÚNICAMENTE con el JSON, sin markdown ni explicaciones extra"""
 
 

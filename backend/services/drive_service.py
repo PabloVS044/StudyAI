@@ -1,5 +1,6 @@
-"""Upload note images to Google Drive using a service account."""
+"""Upload note images to Google Drive using OAuth2."""
 import io
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -10,20 +11,48 @@ _MIME_MAP = {
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
-def _build_service(service_account_json: str):
-    from google.oauth2 import service_account
+def _build_service(token_path: str):
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
-    creds = service_account.Credentials.from_service_account_file(
-        service_account_json, scopes=_SCOPES
-    )
+
+    if not os.path.exists(token_path):
+        raise ValueError("No se encontraron credenciales de Google Drive. Por favor, conecta tu cuenta.")
+
+    creds = Credentials.from_authorized_user_file(token_path, _SCOPES)
+
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            with open(token_path, "w") as token_file:
+                token_file.write(creds.to_json())
+        else:
+            raise ValueError("Las credenciales de Google Drive han expirado o son inválidas. Por favor, vuelve a conectar tu cuenta.")
+
     return build("drive", "v3", credentials=creds)
+
+
+def _get_or_create_studyai_folder(service) -> str:
+    """Search for or create a folder named 'StudyAI'."""
+    query = "name = 'StudyAI' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+    results = service.files().list(q=query, spaces='drive', fields='files(id)').execute()
+    files = results.get('files', [])
+    if files:
+        return files[0]['id']
+
+    folder_meta = {
+        'name': 'StudyAI',
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    folder = service.files().create(body=folder_meta, fields='id').execute()
+    return folder['id']
 
 
 def upload_note_image(
     note_id: str,
     original_filename: str,
     uploads_dir: str,
-    service_account_json: str,
+    token_path: str,
     drive_folder_id: Optional[str] = None,
 ) -> Optional[tuple[str, str]]:
     """Find the image for note_id in uploads_dir and upload it.
@@ -42,8 +71,15 @@ def upload_note_image(
     if not image_path:
         return None
 
-    service = _build_service(service_account_json)
+    service = _build_service(token_path)
     from googleapiclient.http import MediaIoBaseUpload
+
+    # If folder ID is not specified, get or create "StudyAI" folder
+    if not drive_folder_id:
+        try:
+            drive_folder_id = _get_or_create_studyai_folder(service)
+        except Exception:
+            pass
 
     file_meta: dict = {"name": original_filename}
     if drive_folder_id:
@@ -55,9 +91,12 @@ def upload_note_image(
     ).execute()
 
     # Make publicly readable so anyone with the link can view
-    service.permissions().create(
-        fileId=uploaded["id"],
-        body={"type": "anyone", "role": "reader"},
-    ).execute()
+    try:
+        service.permissions().create(
+            fileId=uploaded["id"],
+            body={"type": "anyone", "role": "reader"},
+        ).execute()
+    except Exception:
+        pass
 
     return uploaded["id"], uploaded.get("webViewLink", "")

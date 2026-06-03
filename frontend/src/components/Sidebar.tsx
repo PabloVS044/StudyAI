@@ -1,12 +1,12 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: "dashboard" },
+  { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { to: "/capture", label: "Capture", icon: "add_a_photo" },
   { to: "/library", label: "Library", icon: "library_books" },
+  { to: "/search", label: "Search", icon: "search" },
   { to: "/ai-summaries", label: "AI Summaries", icon: "psychology" },
   { to: "/flashcards", label: "Flashcards", icon: "quiz" },
-  { to: "/concept-maps", label: "Concept Maps", icon: "hub" },
   { to: "/integrations", label: "Integrations", icon: "extension" },
   { to: "/ai-assistant", label: "AI Assistant", icon: "chat" },
 ];
@@ -15,10 +15,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (to: string) => {
-    if (to === "/") return location.pathname === "/";
-    return location.pathname.startsWith(to);
-  };
+  const isActive = (to: string) => location.pathname.startsWith(to);
 
   return (
     <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm py-md px-sm z-50">
@@ -68,16 +65,6 @@ export default function Sidebar() {
         </ul>
       </div>
 
-      {/* Settings */}
-      <div className="mt-auto pt-sm border-t border-outline-variant/30">
-        <button
-          onClick={() => navigate("/settings")}
-          className="w-full flex items-center gap-sm px-md py-sm rounded-lg transition-colors duration-200 text-on-secondary-fixed-variant hover:text-primary hover:bg-primary-container/5"
-        >
-          <span className="material-symbols-outlined text-[20px]">settings</span>
-          <span className="text-label-md">Settings</span>
-        </button>
-      </div>
     </nav>
   );
 }

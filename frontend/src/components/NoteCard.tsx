@@ -79,6 +79,9 @@ export default function NoteCard({ note, onDeleted }: Props) {
             {note.has_diagrams && (
               <Badge icon={<Network size={10} />} label="Diagramas" />
             )}
+            {note.tags?.map((tag) => (
+              <Badge key={tag} icon={null} label={tag} color="teal" />
+            ))}
             {note.notion_url && (
               <a
                 href={note.notion_url}
@@ -136,9 +139,21 @@ export default function NoteCard({ note, onDeleted }: Props) {
   );
 }
 
-function Badge({ icon, label }: { icon: React.ReactNode; label: string }) {
+function Badge({
+  icon,
+  label,
+  color = "violet",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  color?: "violet" | "teal";
+}) {
+  const className = color === "teal"
+    ? "bg-teal-900/30 text-teal-300"
+    : "bg-violet-900/30 text-violet-300";
+
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] bg-violet-900/30 text-violet-300 px-1.5 py-0.5 rounded-full">
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${className}`}>
       {icon} {label}
     </span>
   );
