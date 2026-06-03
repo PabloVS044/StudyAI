@@ -3,7 +3,7 @@
  * Clicking it opens a detail modal.
  */
 import { useState } from "react";
-import { Trash2, FileText, FlaskConical, Network, ExternalLink } from "lucide-react";
+import { Trash2, FlaskConical, Network, ExternalLink } from "lucide-react";
 import { getNote, deleteNote, imageUrl } from "../api/client";
 import Modal from "./Modal";
 import NoteDetailView from "./NoteDetailView";
@@ -96,8 +96,13 @@ export default function NoteCard({ note, onDeleted }: Props) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-36 bg-surface-container-high flex items-center justify-center">
-            <FileText className="text-on-surface-variant/30" size={32} />
+          <div className="w-full h-36 bg-gradient-to-br from-primary-container/40 to-secondary-container/40 flex flex-col items-center justify-center gap-1 select-none">
+            <span className="text-4xl font-bold text-primary/40 leading-none">
+              {note.title?.charAt(0)?.toUpperCase() ?? "?"}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-on-surface-variant/40 font-medium px-3 text-center line-clamp-1">
+              {note.title}
+            </span>
           </div>
         )}
 
