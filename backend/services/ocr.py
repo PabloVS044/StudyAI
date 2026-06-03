@@ -62,4 +62,8 @@ def extract_content(api_key: str, image_bytes: bytes, mime_type: str) -> dict:
             raw = raw[4:]
     raw = raw.strip()
     raw = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', raw)
+    # LaTeX en las formulas (\frac, \alpha, \sum...) son backslashes invalidos
+    # como escape JSON -> "Invalid \escape". Duplica todo backslash que no sea
+    # un escape JSON valido (\" \\ \/ \uXXXX) para que json.loads no falle.
+    raw = re.sub(r'\\(?!["\\/u])', r'\\\\', raw)
     return json.loads(raw, strict=False)
