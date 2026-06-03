@@ -48,6 +48,7 @@ export default function NoteCard({ note, onDeleted }: Props) {
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   async function openDetail() {
     setOpen(true);
@@ -88,12 +89,13 @@ export default function NoteCard({ note, onDeleted }: Props) {
         className="group relative bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary/40 rounded-xl overflow-hidden cursor-pointer transition-all duration-200"
       >
         {/* Thumbnail */}
-        {note.image_ext ? (
+        {note.image_ext && !imgError ? (
           <img
             src={imageUrl(note.note_id)}
             alt={note.title}
             className="w-full h-36 object-cover"
             loading="lazy"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-full h-36 bg-gradient-to-br from-primary-container/40 to-secondary-container/40 flex flex-col items-center justify-center gap-1 select-none">
