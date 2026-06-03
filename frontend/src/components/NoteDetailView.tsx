@@ -67,21 +67,21 @@ export default function NoteDetailView({
           <img
             src={imageUrl(noteId)}
             alt={filename}
-            className="w-20 h-20 object-cover rounded-lg border border-slate-700 shrink-0"
+            className="w-20 h-20 object-cover rounded-lg border border-outline-variant shrink-0"
             loading="lazy"
           />
         )}
         <div className="min-w-0">
-          <h2 className="font-semibold text-white text-lg leading-tight">
+          <h2 className="font-semibold text-on-surface text-lg leading-tight">
             {content?.titulo || filename}
           </h2>
-          <p className="text-sm text-slate-500 mt-0.5">{filename}</p>
+          <p className="text-sm text-on-surface-variant mt-0.5">{filename}</p>
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm mb-4">
+        <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm mb-4">
           {error}
         </div>
       )}
@@ -91,7 +91,7 @@ export default function NoteDetailView({
           {/* Texto principal */}
           {content.texto_principal && (
             <Section label={t.mainText} icon="📝">
-              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
                 {content.texto_principal}
               </p>
             </Section>
@@ -114,11 +114,11 @@ export default function NoteDetailView({
           {/* Definiciones */}
           {content.definiciones?.length > 0 && (
             <Section label={t.definitions} icon="📖">
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-outline-variant/50">
                 {content.definiciones.map((d, i) => (
                   <div key={i} className="py-2 first:pt-0 last:pb-0">
-                    <span className="text-sm font-semibold text-teal-400">{d.termino}</span>
-                    <p className="text-sm text-slate-300 mt-0.5">{d.definicion}</p>
+                    <span className="text-sm font-semibold text-primary">{d.termino}</span>
+                    <p className="text-sm text-on-surface-variant mt-0.5">{d.definicion}</p>
                   </div>
                 ))}
               </div>
@@ -131,11 +131,11 @@ export default function NoteDetailView({
               {content.listas.map((lista, i) => (
                 <div key={i} className="mb-3 last:mb-0">
                   {lista.tipo === "numerada" ? (
-                    <ol className="list-decimal list-inside text-sm text-slate-300 space-y-1 pl-1">
+                    <ol className="list-decimal list-inside text-sm text-on-surface-variant space-y-1 pl-1">
                       {lista.items.map((item, j) => <li key={j}>{item}</li>)}
                     </ol>
                   ) : (
-                    <ul className="list-disc list-inside text-sm text-slate-300 space-y-1 pl-1">
+                    <ul className="list-disc list-inside text-sm text-on-surface-variant space-y-1 pl-1">
                       {lista.items.map((item, j) => <li key={j}>{item}</li>)}
                     </ul>
                   )}
@@ -148,7 +148,7 @@ export default function NoteDetailView({
           {content.diagramas_figuras?.length > 0 && (
             <Section label={t.diagrams} icon="🖼">
               {content.diagramas_figuras.map((d, i) => (
-                <div key={i} className="callout-info rounded-lg px-4 py-3 mb-2 last:mb-0 text-sm text-slate-300 leading-relaxed">
+                <div key={i} className="callout-info rounded-lg px-4 py-3 mb-2 last:mb-0 text-sm text-on-surface-variant leading-relaxed">
                   🖼 {d.descripcion}
                 </div>
               ))}
@@ -158,7 +158,7 @@ export default function NoteDetailView({
           {/* Observaciones */}
           {content.observaciones && (
             <Section label={t.observations} icon="💡">
-              <div className="callout-note rounded-lg px-4 py-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <div className="callout-note rounded-lg px-4 py-3 text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
                 {content.observaciones}
               </div>
             </Section>
@@ -185,8 +185,8 @@ function Section({ label, icon, children }: { label: string; icon: string; child
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-semibold uppercase tracking-widest text-violet-400">{icon} {label}</span>
-        <div className="flex-1 h-px bg-slate-700/60" />
+        <span className="text-xs font-semibold uppercase tracking-widest text-secondary">{icon} {label}</span>
+        <div className="flex-1 h-px bg-outline-variant/60" />
       </div>
       {children}
     </div>
