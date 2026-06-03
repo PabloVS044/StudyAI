@@ -33,9 +33,13 @@ class Settings:
     CLERK_JWKS_URL: str = os.environ.get("CLERK_JWKS_URL", "")
 
     # Server
-    CORS_ORIGINS: list[str] = os.environ.get(
-        "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
-    ).split(",")
+    CORS_ORIGINS: list[str] = [
+        o.strip().rstrip("/")
+        for o in os.environ.get(
+            "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
+        ).split(",")
+        if o.strip()
+    ]
     UPLOADS_DIR: str = os.environ.get("UPLOADS_DIR", "uploads")
 
     @property

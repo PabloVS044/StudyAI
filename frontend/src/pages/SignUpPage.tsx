@@ -34,19 +34,20 @@ export default function SignUpPage() {
       <div className="hidden md:flex md:w-1/2 relative flex-col items-center justify-center overflow-hidden">
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-container to-secondary" />
-        {/* Optional image - replace /images/auth-placeholder.jpg with your real image */}
+        {/* Background image */}
         <img
-          src="/images/auth-placeholder.jpg"
+          src="/sign-photo.jpeg"
           alt="StudyAI - Aprende de forma inteligente"
-          className="absolute inset-0 w-full h-full object-cover opacity-30"
+          className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
         />
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/40" />
         {/* Branding overlay */}
         <div className="relative z-10 flex flex-col items-center gap-6 px-12 text-center">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="StudyAI" className="w-12 h-12 rounded-xl object-cover" />
+          <div className="flex items-center justify-center">
             <span className="text-3xl font-extrabold text-on-primary tracking-tight">
               StudyAI
             </span>

@@ -6,7 +6,7 @@ import {
   getObsidianMarkdown,
   disconnectIntegration,
   notionConnectUrl,
-  exchangeNotion,
+  exchangeOAuth,
   googleConnectUrl,
   listNotionParents,
   listNotionBooks,
@@ -300,7 +300,7 @@ export default function IntegrationsPage() {
 
   useEffect(() => { load(); }, []);
 
-  // Handle Notion OAuth redirect: /integrations?code=...&state=...
+  // Handle OAuth redirect (Notion & Google): /integrations?code=...&state=...
   useEffect(() => {
     if (notionExchangeDone.current) return;
     const params = new URLSearchParams(window.location.search);
@@ -309,9 +309,10 @@ export default function IntegrationsPage() {
     if (!code || !state) return;
     notionExchangeDone.current = true;
     window.history.replaceState({}, "", window.location.pathname);
-    exchangeNotion(code, state)
-      .then(() => {
-        notify.success(t.notionConnectSuccess);
+    exchangeOAuth(code, state)
+      .then((res) => {
+        const name = res.provider === "google" ? "Google Drive" : "Notion";
+        notify.success(lang === "es" ? `${name} conectado` : `${name} connected`);
         return load();
       })
       .catch(err => {

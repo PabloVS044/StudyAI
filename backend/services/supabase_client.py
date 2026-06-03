@@ -142,3 +142,42 @@ def update_integration(user_id: str, provider: str, **fields) -> None:
 
 def delete_integration(user_id: str, provider: str) -> None:
     _client().table("user_integrations").delete().eq("user_id", user_id).eq("provider", provider).execute()
+
+
+# ---------------------------------------------------------------------------
+# Quiz attempts
+# ---------------------------------------------------------------------------
+
+def save_quiz_attempt(
+    user_id: str,
+    note_id: str,
+    difficulty: str,
+    mode: str,
+    total: int,
+    correct: int,
+    max_streak: int,
+    passed: bool,
+) -> None:
+    _client().table("quiz_attempts").insert({
+        "user_id": user_id,
+        "note_id": note_id,
+        "difficulty": difficulty,
+        "mode": mode,
+        "total": total,
+        "correct": correct,
+        "max_streak": max_streak,
+        "passed": passed,
+    }).execute()
+
+
+def list_quiz_attempts(user_id: str, note_id: Optional[str] = None) -> list[dict]:
+    q = (
+        _client()
+        .table("quiz_attempts")
+        .select("*")
+        .eq("user_id", user_id)
+    )
+    if note_id:
+        q = q.eq("note_id", note_id)
+    result = q.order("created_at", desc=True).execute()
+    return result.data or []
