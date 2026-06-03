@@ -6,15 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from config import settings
-from routers import extract, notes, integrations, config_router, chat, summaries, flashcards
+from routers import extract, notes, integrations, config_router, chat, summaries, flashcards, quiz
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="StudyAI API", version="2.0.0", docs_url="/api/docs")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],          # abierto a cualquier origen
+    allow_credentials=False,      # obligatorio: "*" no es valido con credentials=True
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -45,6 +45,7 @@ app.include_router(config_router.router, prefix="/api/config",        tags=["con
 app.include_router(summaries.router,     prefix="/api/summaries",     tags=["summaries"])
 app.include_router(chat.router,          prefix="/api/chat",          tags=["chat"])
 app.include_router(flashcards.router,    prefix="/api/flashcards",    tags=["flashcards"])
+app.include_router(quiz.router,          prefix="/api/quiz",          tags=["quiz"])
 
 
 # ── Serve uploaded images ─────────────────────────────────────────────────────

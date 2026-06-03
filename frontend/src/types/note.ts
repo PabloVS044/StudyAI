@@ -98,3 +98,16 @@ export interface AppConfig {
   obsidian: boolean;
   pinecone: boolean;
 }
+
+export interface QuizQuestion {
+  pregunta: string;
+  opciones: string[];
+  correcta: number;
+  explicacion: string;
+}
+
+export interface QuizResult {
+  note_id: string;
+  difficulty: string;
+  questions: QuizQuestion[];
+}

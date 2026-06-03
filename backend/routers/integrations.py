@@ -78,36 +78,59 @@ async def notion_connect(user_id: str = Depends(get_current_user)):
     return {"auth_url": auth_url}
 
 
-class NotionExchangeBody(BaseModel):
+class OAuthExchangeBody(BaseModel):
     code: str
     state: str
 
 
-@router.post("/notion/exchange")
-async def notion_exchange(body: NotionExchangeBody, user_id: str = Depends(get_current_user)):
+@router.post("/oauth/exchange")
+async def oauth_exchange(body: OAuthExchangeBody, user_id: str = Depends(get_current_user)):
+    """Unified frontend-callback: Notion y Google redirigen a /integrations?code&state.
+    El provider se resuelve desde el state guardado."""
     state_data = supabase_client.pop_oauth_state(body.state)
-    if not state_data or state_data.get("provider") != "notion":
+    if not state_data:
         raise HTTPException(status_code=400, detail="Estado OAuth invalido o expirado")
     if state_data["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Estado OAuth no corresponde al usuario")
+    provider = state_data.get("provider")
 
-    try:
-        token_data = notion_service.exchange_code(
-            client_id=settings.NOTION_OAUTH_CLIENT_ID,
-            client_secret=settings.NOTION_OAUTH_CLIENT_SECRET,
-            code=body.code,
-            redirect_uri=settings.NOTION_REDIRECT_URI,
+    if provider == "notion":
+        try:
+            token_data = notion_service.exchange_code(
+                client_id=settings.NOTION_OAUTH_CLIENT_ID,
+                client_secret=settings.NOTION_OAUTH_CLIENT_SECRET,
+                code=body.code,
+                redirect_uri=settings.NOTION_REDIRECT_URI,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Error al obtener token de Notion: {exc}")
+        supabase_client.upsert_integration(
+            user_id, "notion",
+            access_token=token_data.get("access_token"),
+            account_label=token_data.get("workspace_name", ""),
         )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error al obtener token de Notion: {exc}")
+        return {"provider": "notion", "connected": True, "account": token_data.get("workspace_name", "")}
 
-    supabase_client.upsert_integration(
-        user_id,
-        "notion",
-        access_token=token_data.get("access_token"),
-        account_label=token_data.get("workspace_name", ""),
-    )
-    return {"connected": True, "account": token_data.get("workspace_name", "")}
+    if provider == "google":
+        try:
+            token_data = drive_service.exchange_code(
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                redirect_uri=settings.GOOGLE_REDIRECT_URI,
+                code=body.code,
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Error al obtener token de Google: {exc}")
+        supabase_client.upsert_integration(
+            user_id, "google",
+            access_token=token_data.get("access_token"),
+            refresh_token=token_data.get("refresh_token"),
+            expires_at=token_data.get("expires_at"),
+            account_label=token_data.get("email", ""),
+        )
+        return {"provider": "google", "connected": True, "account": token_data.get("email", "")}
+
+    raise HTTPException(status_code=400, detail="Proveedor OAuth desconocido en el state")
 
 
 @router.get("/notion/parents")
@@ -243,34 +266,6 @@ async def google_connect(user_id: str = Depends(get_current_user)):
         state=state,
     )
     return {"auth_url": auth_url}
-
-
-@router.get("/google/callback")
-async def google_callback(code: str, state: str):
-    state_data = supabase_client.pop_oauth_state(state)
-    if not state_data:
-        raise HTTPException(status_code=400, detail="Estado OAuth invalido o expirado")
-    user_id = state_data["user_id"]
-
-    try:
-        token_data = drive_service.exchange_code(
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            redirect_uri=settings.GOOGLE_REDIRECT_URI,
-            code=code,
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error al obtener token de Google: {exc}")
-
-    supabase_client.upsert_integration(
-        user_id,
-        "google",
-        access_token=token_data.get("access_token"),
-        refresh_token=token_data.get("refresh_token"),
-        expires_at=token_data.get("expires_at"),
-        account_label=token_data.get("email", ""),
-    )
-    return RedirectResponse(url=settings.FRONTEND_URL.rstrip("/") + "/integrations")
 
 
 @router.get("/google/folders")
