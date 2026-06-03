@@ -16,6 +16,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import SearchPage from "./pages/SearchPage";
 import NotebooksPage from "./pages/NotebooksPage";
+import ConceptMapsPage from "./pages/ConceptMapsPage";
 
 function AppShell() {
   return (
@@ -36,6 +37,7 @@ function AppShell() {
             <Route path="/ai-assistant"     element={<AIAssistantPage />} />
             <Route path="/search"           element={<SearchPage />} />
             <Route path="/notebooks"        element={<NotebooksPage />} />
+            <Route path="/concept-maps"     element={<ConceptMapsPage />} />
           </Routes>
         </div>
       </div>

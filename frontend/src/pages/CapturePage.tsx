@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import CameraModal from "../components/CameraModal";
 import NoteDetailView from "../components/NoteDetailView";
 import Spinner from "../components/Spinner";
+import Modal from "../components/Modal";
 import { extractImages, saveNote, listNotebooks, createNotebook } from "../api/client";
 import type { ExtractResult, Notebook } from "../types/note";
 import { useAppSettings } from "../context/AppSettings";
@@ -29,10 +30,17 @@ const COPY = {
     errorDefault: "Error al conectar con el backend",
     noteSaved: "Nota guardada",
     noteSavedError: "Error al guardar la nota",
-    notebookLabel: "Libro (opcional)",
+    notebookLabel: "Libro",
     notebookNone: "Sin libro",
-    notebookCreate: "Crear nuevo libro...",
-    notebookCreatePrompt: "Nombre del nuevo libro:",
+    notebookChoose: "Elegir / Nuevo libro",
+    notebookDialogTitle: "Seleccionar libro",
+    notebookExisting: "Libros existentes",
+    notebookNoBooks: "No hay libros aún",
+    notebookNewSection: "Crear nuevo libro",
+    notebookNamePlaceholder: "Nombre del libro",
+    notebookDescPlaceholder: "Descripción (opcional)",
+    notebookCreateBtn: "Crear",
+    notebookCreating: "Creando…",
     notebookCreated: "Libro creado",
     notebookCreateError: "Error al crear el libro",
     inputTypes: [
@@ -62,10 +70,17 @@ const COPY = {
     errorDefault: "Error connecting to backend",
     noteSaved: "Note saved",
     noteSavedError: "Error saving note",
-    notebookLabel: "Notebook (optional)",
+    notebookLabel: "Notebook",
     notebookNone: "No notebook",
-    notebookCreate: "Create new notebook...",
-    notebookCreatePrompt: "New notebook name:",
+    notebookChoose: "Choose / New notebook",
+    notebookDialogTitle: "Select notebook",
+    notebookExisting: "Existing notebooks",
+    notebookNoBooks: "No notebooks yet",
+    notebookNewSection: "Create new notebook",
+    notebookNamePlaceholder: "Notebook name",
+    notebookDescPlaceholder: "Description (optional)",
+    notebookCreateBtn: "Create",
+    notebookCreating: "Creating...",
     notebookCreated: "Notebook created",
     notebookCreateError: "Error creating notebook",
     inputTypes: [
@@ -93,7 +108,11 @@ export default function CapturePage() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [selectedNotebookId, setSelectedNotebookId] = useState<number | undefined>(undefined);
   const [loadingNotebooks, setLoadingNotebooks] = useState(false);
+  const [showNotebookDialog, setShowNotebookDialog] = useState(false);
   const [creatingNotebook, setCreatingNotebook] = useState(false);
+  const [newNotebookName, setNewNotebookName] = useState("");
+  const [newNotebookDesc, setNewNotebookDesc] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLoadingNotebooks(true);
@@ -103,25 +122,31 @@ export default function CapturePage() {
       .finally(() => setLoadingNotebooks(false));
   }, []);
 
-  async function handleNotebookChange(value: string) {
-    if (value === "__create__") {
-      const name = window.prompt(t.notebookCreatePrompt);
-      if (!name?.trim()) return;
-      setCreatingNotebook(true);
-      try {
-        const nb = await createNotebook({ name: name.trim() });
-        setNotebooks((prev) => [nb, ...prev]);
-        setSelectedNotebookId(nb.id);
-        notify.success(t.notebookCreated);
-      } catch {
-        notify.error(t.notebookCreateError);
-      } finally {
-        setCreatingNotebook(false);
-      }
-    } else if (value === "") {
-      setSelectedNotebookId(undefined);
-    } else {
-      setSelectedNotebookId(Number(value));
+  function openNotebookDialog() {
+    setNewNotebookName("");
+    setNewNotebookDesc("");
+    setShowNotebookDialog(true);
+  }
+
+  function selectNotebook(id: number | undefined) {
+    setSelectedNotebookId(id);
+    setShowNotebookDialog(false);
+  }
+
+  async function handleCreateNotebook(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newNotebookName.trim()) return;
+    setCreatingNotebook(true);
+    try {
+      const nb = await createNotebook({ name: newNotebookName.trim(), description: newNotebookDesc.trim() || undefined });
+      setNotebooks((prev) => [nb, ...prev]);
+      setSelectedNotebookId(nb.id);
+      notify.success(t.notebookCreated);
+      setShowNotebookDialog(false);
+    } catch {
+      notify.error(t.notebookCreateError);
+    } finally {
+      setCreatingNotebook(false);
     }
   }
 
@@ -198,6 +223,32 @@ export default function CapturePage() {
           <div className="flex flex-col gap-xs">
             <h2 className="text-headline-lg text-primary">{t.pageTitle}</h2>
             <p className="text-body-lg text-on-surface-variant">{t.pageSubtitle}</p>
+          </div>
+
+          {/* Notebook selector */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
+            <span className="text-label-md text-on-surface whitespace-nowrap flex items-center gap-xs">
+              <span className="material-symbols-outlined text-primary text-[18px]">menu_book</span>
+              {t.notebookLabel}
+            </span>
+            <button
+              type="button"
+              onClick={openNotebookDialog}
+              disabled={loadingNotebooks}
+              className="flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface hover:border-primary transition-colors disabled:opacity-50 max-w-sm"
+            >
+              <span className="material-symbols-outlined text-primary text-[18px]">
+                {selectedNotebookId ? "book" : "book_online"}
+              </span>
+              <span className="flex-1 text-left truncate">
+                {loadingNotebooks
+                  ? "..."
+                  : selectedNotebookId
+                    ? notebooks.find((nb) => nb.id === selectedNotebookId)?.name ?? t.notebookNone
+                    : t.notebookNone}
+              </span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">edit</span>
+            </button>
           </div>
 
           {/* Drop Zone */}
@@ -294,34 +345,6 @@ export default function CapturePage() {
             </div>
           </div>
 
-          {/* Notebook selector */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
-            <label htmlFor="notebook-select" className="text-label-md text-on-surface whitespace-nowrap flex items-center gap-xs">
-              <span className="material-symbols-outlined text-primary text-[18px]">menu_book</span>
-              {t.notebookLabel}
-            </label>
-            <div className="relative flex-1 max-w-sm">
-              <select
-                id="notebook-select"
-                value={selectedNotebookId ?? ""}
-                onChange={(e) => handleNotebookChange(e.target.value)}
-                disabled={loadingNotebooks || creatingNotebook}
-                className="w-full appearance-none bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm pr-xl text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
-              >
-                <option value="">{t.notebookNone}</option>
-                {notebooks.map((nb) => (
-                  <option key={nb.id} value={nb.id}>
-                    {nb.name}{nb.note_count != null ? ` (${nb.note_count})` : ""}
-                  </option>
-                ))}
-                <option value="__create__">{t.notebookCreate}</option>
-              </select>
-              <span className="pointer-events-none absolute right-sm top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant text-[18px]">
-                {creatingNotebook ? "hourglass_empty" : "expand_more"}
-              </span>
-            </div>
-          </div>
-
           {/* Error */}
           {error && (
             <div className="p-md bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-body-md">
@@ -364,6 +387,103 @@ export default function CapturePage() {
 
         </div>
       </main>
+
+      {/* Notebook dialog */}
+      <Modal
+        open={showNotebookDialog}
+        onClose={() => setShowNotebookDialog(false)}
+        title={t.notebookDialogTitle}
+      >
+        <div className="flex flex-col gap-lg">
+          {/* Existing notebooks */}
+          <div>
+            <p className="text-label-md text-on-surface-variant mb-sm">{t.notebookExisting}</p>
+            {loadingNotebooks ? (
+              <div className="flex justify-center py-md"><Spinner size={20} /></div>
+            ) : notebooks.length === 0 ? (
+              <p className="text-body-md text-on-surface-variant/60 py-sm">{t.notebookNoBooks}</p>
+            ) : (
+              <ul className="flex flex-col gap-xs max-h-48 overflow-y-auto pr-xs">
+                {/* None option */}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => selectNotebook(undefined)}
+                    className={`w-full flex items-center gap-sm px-md py-sm rounded-lg text-body-md transition-colors text-left ${
+                      selectedNotebookId === undefined
+                        ? "bg-primary/15 text-primary border border-primary/30"
+                        : "text-on-surface-variant hover:bg-surface-container"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">book_online</span>
+                    {t.notebookNone}
+                    {selectedNotebookId === undefined && (
+                      <span className="material-symbols-outlined text-primary text-[16px] ml-auto">check</span>
+                    )}
+                  </button>
+                </li>
+                {notebooks.map((nb) => (
+                  <li key={nb.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectNotebook(nb.id)}
+                      className={`w-full flex items-center gap-sm px-md py-sm rounded-lg text-body-md transition-colors text-left ${
+                        selectedNotebookId === nb.id
+                          ? "bg-primary/15 text-primary border border-primary/30"
+                          : "text-on-surface hover:bg-surface-container"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">book</span>
+                      <span className="flex-1 truncate">{nb.name}</span>
+                      {nb.note_count != null && (
+                        <span className="text-caption text-on-surface-variant/60 shrink-0">{nb.note_count}</span>
+                      )}
+                      {selectedNotebookId === nb.id && (
+                        <span className="material-symbols-outlined text-primary text-[16px]">check</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-outline-variant" />
+
+          {/* Create form */}
+          <div>
+            <p className="text-label-md text-on-surface-variant mb-sm">{t.notebookNewSection}</p>
+            <form onSubmit={handleCreateNotebook} className="flex flex-col gap-sm">
+              <input
+                ref={nameInputRef}
+                type="text"
+                value={newNotebookName}
+                onChange={(e) => setNewNotebookName(e.target.value)}
+                placeholder={t.notebookNamePlaceholder}
+                maxLength={80}
+                className="bg-surface-container border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors"
+              />
+              <textarea
+                value={newNotebookDesc}
+                onChange={(e) => setNewNotebookDesc(e.target.value)}
+                placeholder={t.notebookDescPlaceholder}
+                rows={2}
+                maxLength={200}
+                className="bg-surface-container border border-outline-variant rounded-lg px-md py-sm text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary transition-colors resize-none"
+              />
+              <button
+                type="submit"
+                disabled={!newNotebookName.trim() || creatingNotebook}
+                className="self-end flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-full text-label-md font-medium transition-colors hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {creatingNotebook && <Spinner size={16} />}
+                {creatingNotebook ? t.notebookCreating : t.notebookCreateBtn}
+              </button>
+            </form>
+          </div>
+        </div>
+      </Modal>
 
       {showCamera && (
         <CameraModal

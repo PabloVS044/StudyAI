@@ -30,6 +30,10 @@ def _creds_from_token(token: dict, client_id: str = None, client_secret: str = N
     if token.get("expires_at"):
         try:
             expiry = datetime.fromisoformat(str(token["expires_at"]).replace("Z", "+00:00"))
+            # google-auth espera expiry NAIVE en UTC; un aware datetime revienta
+            # con "can't compare offset-naive and offset-aware datetimes".
+            if expiry.tzinfo is not None:
+                expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
         except Exception:
             pass
 
