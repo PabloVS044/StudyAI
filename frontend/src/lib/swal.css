@@ -1,0 +1,52 @@
+/* SweetAlert2 branded styles using CSS vars */
+.swal-popup {
+  background: rgb(var(--c-surface)) !important;
+  color: rgb(var(--c-on-surface)) !important;
+  border-radius: 0.75rem !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.swal-title {
+  color: rgb(var(--c-on-surface)) !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.swal-html {
+  color: rgb(var(--c-on-surface)) !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.swal-confirm {
+  background: rgb(var(--c-primary)) !important;
+  color: rgb(var(--c-on-primary)) !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.swal-confirm:focus {
+  box-shadow: 0 0 0 3px rgba(var(--c-primary), 0.4) !important;
+}
+
+.swal-cancel {
+  background: transparent !important;
+  color: rgb(var(--c-on-surface)) !important;
+  border: 1.5px solid rgb(var(--c-outline-variant)) !important;
+  border-radius: 0.5rem !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.swal-cancel:focus {
+  box-shadow: none !important;
+}
+
+.swal-icon--error__ring {
+  border-color: rgb(var(--c-error)) !important;
+}
+
+.swal-icon--error__line {
+  background-color: rgb(var(--c-error)) !important;
+}

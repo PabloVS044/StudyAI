@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TopBar from "../components/TopBar";
 import {
   getConfig,
@@ -6,6 +6,7 @@ import {
   getObsidianMarkdown,
   disconnectIntegration,
   notionConnectUrl,
+  exchangeNotion,
   googleConnectUrl,
   listNotionParents,
   listNotionBooks,
@@ -25,6 +26,8 @@ import {
   obsidianUri,
   safeFilename,
 } from "../utils/obsidianVault";
+import { confirmDialog } from "../lib/swal";
+import { notify } from "../lib/toast";
 
 const COPY = {
   es: {
@@ -67,10 +70,20 @@ const COPY = {
     notionUnavailable: "No disponible",
     notionConnect: "Conectar Notion",
     notionRedirecting: "Redirigiendo...",
+    notionConnectSuccess: "Notion conectado correctamente.",
+    notionConnectError: "Error al conectar Notion:",
     notionNewBook: "+ Nuevo libro",
     notionExisting: "Usar existente",
     notionDisconnect: "Desconectar",
     notionDisconnected: "Desconectado",
+    notionDisconnectTitle: "Desconectar Notion",
+    notionDisconnectText: "Se eliminara el acceso a tu workspace. Podras volver a conectarlo cuando quieras.",
+    notionDisconnectConfirm: "Desconectar",
+    notionDisconnectCancel: "Cancelar",
+    notionDisconnectSuccess: "Notion desconectado.",
+    notionBookCreated: "Libro creado correctamente.",
+    notionBookSelected: "Libro seleccionado correctamente.",
+    notionRedirectingMsg: "Redirigiendo a Notion...",
     // Drive
     driveNoOAuth: "Configura las llaves OAuth de Google en el servidor.",
     driveOAuthOff: "OAuth no configurado",
@@ -87,6 +100,14 @@ const COPY = {
     driveExisting: "Usar existente",
     driveDisconnect: "Desconectar",
     driveDisconnected: "Desconectado",
+    driveDisconnectTitle: "Desconectar Google Drive",
+    driveDisconnectText: "Se eliminara el acceso a tu cuenta de Drive. Podras volver a conectarlo cuando quieras.",
+    driveDisconnectConfirm: "Desconectar",
+    driveDisconnectCancel: "Cancelar",
+    driveDisconnectSuccess: "Google Drive desconectado.",
+    driveFolderCreated: "Carpeta creada correctamente.",
+    driveFolderSelected: "Carpeta seleccionada correctamente.",
+    driveRedirectingMsg: "Redirigiendo a Google...",
     // Modals
     modalNewBook: "Nuevo libro en Notion",
     modalBookName: "Nombre del libro",
@@ -147,10 +168,20 @@ const COPY = {
     notionUnavailable: "Not available",
     notionConnect: "Connect Notion",
     notionRedirecting: "Redirecting...",
+    notionConnectSuccess: "Notion connected successfully.",
+    notionConnectError: "Error connecting Notion:",
     notionNewBook: "+ New book",
     notionExisting: "Use existing",
     notionDisconnect: "Disconnect",
     notionDisconnected: "Disconnected",
+    notionDisconnectTitle: "Disconnect Notion",
+    notionDisconnectText: "Access to your workspace will be removed. You can reconnect at any time.",
+    notionDisconnectConfirm: "Disconnect",
+    notionDisconnectCancel: "Cancel",
+    notionDisconnectSuccess: "Notion disconnected.",
+    notionBookCreated: "Book created successfully.",
+    notionBookSelected: "Book selected successfully.",
+    notionRedirectingMsg: "Redirecting to Notion...",
     // Drive
     driveNoOAuth: "Configure Google OAuth keys on the server.",
     driveOAuthOff: "OAuth not configured",
@@ -167,6 +198,14 @@ const COPY = {
     driveExisting: "Use existing",
     driveDisconnect: "Disconnect",
     driveDisconnected: "Disconnected",
+    driveDisconnectTitle: "Disconnect Google Drive",
+    driveDisconnectText: "Access to your Drive account will be removed. You can reconnect at any time.",
+    driveDisconnectConfirm: "Disconnect",
+    driveDisconnectCancel: "Cancel",
+    driveDisconnectSuccess: "Google Drive disconnected.",
+    driveFolderCreated: "Folder created successfully.",
+    driveFolderSelected: "Folder selected successfully.",
+    driveRedirectingMsg: "Redirecting to Google...",
     // Modals
     modalNewBook: "New book in Notion",
     modalBookName: "Book name",
@@ -215,7 +254,9 @@ export default function IntegrationsPage() {
   const [driveModal, setDriveModal] = useState<DriveModal>({ kind: "none" });
 
   const [actionBusy, setActionBusy] = useState<"notion" | "google" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  // guard: run the Notion OAuth callback exchange at most once per page load
+  const notionExchangeDone = useRef(false);
 
   // Obsidian vault state
   const [vaultHandle, setVaultHandle] = useState<FileSystemDirectoryHandle | null>(null);
@@ -259,28 +300,55 @@ export default function IntegrationsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const showError = (msg: string) => { setError(msg); setTimeout(() => setError(null), 5000); };
+  // Handle Notion OAuth redirect: /integrations?code=...&state=...
+  useEffect(() => {
+    if (notionExchangeDone.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    if (!code || !state) return;
+    notionExchangeDone.current = true;
+    window.history.replaceState({}, "", window.location.pathname);
+    exchangeNotion(code, state)
+      .then(() => {
+        notify.success(t.notionConnectSuccess);
+        return load();
+      })
+      .catch(err => {
+        notify.error(`${t.notionConnectError} ${(err as Error).message}`);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Notion actions ─────────────────────────────────────────────────────────
   const handleNotionConnect = async () => {
     try {
       setActionBusy("notion");
       const { auth_url } = await notionConnectUrl();
+      notify.info(t.notionRedirectingMsg);
       window.location.href = auth_url;
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setActionBusy(null);
     }
   };
 
   const handleNotionDisconnect = async () => {
-    if (!confirm("Desconectar Notion?")) return;
+    const ok = await confirmDialog({
+      title: t.notionDisconnectTitle,
+      text: t.notionDisconnectText,
+      confirmText: t.notionDisconnectConfirm,
+      cancelText: t.notionDisconnectCancel,
+      icon: "warning",
+    });
+    if (!ok) return;
     try {
       setActionBusy("notion");
       await disconnectIntegration("notion");
+      notify.success(t.notionDisconnectSuccess);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
     } finally {
       setActionBusy(null);
     }
@@ -292,7 +360,7 @@ export default function IntegrationsPage() {
       const parents = await listNotionParents();
       setNotionModal({ kind: "new-book", parents, title: "", parentId: parents[0]?.id ?? "", busy: false });
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
     } finally {
       setActionBusy(null);
     }
@@ -304,7 +372,7 @@ export default function IntegrationsPage() {
       const books = await listNotionBooks();
       setNotionModal({ kind: "existing-book", books, selectedId: books[0]?.id ?? "", selectedTitle: books[0]?.title ?? "", busy: false });
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
     } finally {
       setActionBusy(null);
     }
@@ -312,28 +380,30 @@ export default function IntegrationsPage() {
 
   const submitNewBook = async () => {
     if (notionModal.kind !== "new-book") return;
-    if (!notionModal.title.trim()) { showError("Escribe un nombre para el libro."); return; }
+    if (!notionModal.title.trim()) { notify.error(lang === "es" ? "Escribe un nombre para el libro." : "Enter a name for the book."); return; }
     setNotionModal({ ...notionModal, busy: true });
     try {
       await createNotionBook({ title: notionModal.title.trim(), parent_page_id: notionModal.parentId || undefined });
       setNotionModal({ kind: "none" });
+      notify.success(t.notionBookCreated);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setNotionModal({ ...notionModal, busy: false });
     }
   };
 
   const submitExistingBook = async () => {
     if (notionModal.kind !== "existing-book") return;
-    if (!notionModal.selectedId) { showError("Selecciona un libro."); return; }
+    if (!notionModal.selectedId) { notify.error(lang === "es" ? "Selecciona un libro." : "Select a book."); return; }
     setNotionModal({ ...notionModal, busy: true });
     try {
       await selectNotionBook({ database_id: notionModal.selectedId, title: notionModal.selectedTitle });
       setNotionModal({ kind: "none" });
+      notify.success(t.notionBookSelected);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setNotionModal({ ...notionModal, busy: false });
     }
   };
@@ -343,21 +413,30 @@ export default function IntegrationsPage() {
     try {
       setActionBusy("google");
       const { auth_url } = await googleConnectUrl();
+      notify.info(t.driveRedirectingMsg);
       window.location.href = auth_url;
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setActionBusy(null);
     }
   };
 
   const handleDriveDisconnect = async () => {
-    if (!confirm("Desconectar Google Drive?")) return;
+    const ok = await confirmDialog({
+      title: t.driveDisconnectTitle,
+      text: t.driveDisconnectText,
+      confirmText: t.driveDisconnectConfirm,
+      cancelText: t.driveDisconnectCancel,
+      icon: "warning",
+    });
+    if (!ok) return;
     try {
       setActionBusy("google");
       await disconnectIntegration("google");
+      notify.success(t.driveDisconnectSuccess);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
     } finally {
       setActionBusy(null);
     }
@@ -373,7 +452,7 @@ export default function IntegrationsPage() {
       const folders = await listDriveFolders();
       setDriveModal({ kind: "existing-folder", folders, selectedId: folders[0]?.id ?? "", selectedName: folders[0]?.name ?? "", busy: false });
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
     } finally {
       setActionBusy(null);
     }
@@ -381,28 +460,30 @@ export default function IntegrationsPage() {
 
   const submitNewFolder = async () => {
     if (driveModal.kind !== "new-folder") return;
-    if (!driveModal.name.trim()) { showError("Escribe un nombre para la carpeta."); return; }
+    if (!driveModal.name.trim()) { notify.error(lang === "es" ? "Escribe un nombre para la carpeta." : "Enter a name for the folder."); return; }
     setDriveModal({ ...driveModal, busy: true });
     try {
       await createDriveFolder({ name: driveModal.name.trim() });
       setDriveModal({ kind: "none" });
+      notify.success(t.driveFolderCreated);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setDriveModal({ ...driveModal, busy: false });
     }
   };
 
   const submitExistingFolder = async () => {
     if (driveModal.kind !== "existing-folder") return;
-    if (!driveModal.selectedId) { showError("Selecciona una carpeta."); return; }
+    if (!driveModal.selectedId) { notify.error(lang === "es" ? "Selecciona una carpeta." : "Select a folder."); return; }
     setDriveModal({ ...driveModal, busy: true });
     try {
       await selectDriveFolder({ folder_id: driveModal.selectedId, name: driveModal.selectedName });
       setDriveModal({ kind: "none" });
+      notify.success(t.driveFolderSelected);
       await load();
     } catch (err) {
-      showError((err as Error).message);
+      notify.error((err as Error).message);
       setDriveModal({ ...driveModal, busy: false });
     }
   };
@@ -413,13 +494,6 @@ export default function IntegrationsPage() {
   return (
     <>
       <TopBar searchPlaceholder="Search..." />
-
-      {/* Error toast */}
-      {error && (
-        <div className="fixed top-4 right-4 z-50 bg-error text-on-error px-4 py-2 rounded-lg text-body-md shadow-lg">
-          {error}
-        </div>
-      )}
 
       {/* Notion modal */}
       {notionModal.kind !== "none" && (
@@ -682,7 +756,7 @@ export default function IntegrationsPage() {
                             await writeNote(vaultHandle, stem + ".md", md);
                             setObsidianLink(obsidianUri(vaultName, stem));
                           } catch (err) {
-                            showError((err as Error).message);
+                            notify.error((err as Error).message);
                           } finally {
                             setObsidianBusy(false);
                           }

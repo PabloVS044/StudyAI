@@ -43,9 +43,7 @@ export default function Sidebar() {
     <nav className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface-container-low shadow-sm py-md px-sm z-50">
       {/* Brand */}
       <div className="mb-lg px-sm flex items-center gap-sm">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <span className="material-symbols-outlined fill text-on-primary text-[18px]">psychology</span>
-        </div>
+        <img src="/logo.png" alt="StudyAI" className="w-8 h-8 rounded-full object-cover" />
         <div>
           <h1 className="text-headline-md text-primary tracking-tight" style={{ fontWeight: 800 }}>StudyFlow AI</h1>
           <p className="text-caption text-on-surface-variant">{t.tagline}</p>
