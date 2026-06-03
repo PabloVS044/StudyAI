@@ -39,3 +39,29 @@ CREATE INDEX IF NOT EXISTS idx_notes_user_id
 -- Indice para ordenar por fecha de creacion descendente
 CREATE INDEX IF NOT EXISTS idx_notes_created_at
     ON notes (created_at DESC);
+
+-- =============================================================================
+-- Multi-tenant OAuth integrations
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS user_integrations (
+    user_id       TEXT        NOT NULL,
+    provider      TEXT        NOT NULL,   -- 'notion' | 'google'
+    access_token  TEXT,
+    refresh_token TEXT,
+    expires_at    TIMESTAMPTZ,
+    account_label TEXT,                   -- workspace name (notion) / email (google)
+    target_id     TEXT,                   -- notion database id / drive folder id
+    target_label  TEXT,                   -- nombre del libro/carpeta
+    extra         JSONB       DEFAULT '{}',
+    created_at    TIMESTAMPTZ DEFAULT now(),
+    updated_at    TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, provider)
+);
+
+CREATE TABLE IF NOT EXISTS oauth_states (
+    state      TEXT        PRIMARY KEY,
+    user_id    TEXT        NOT NULL,
+    provider   TEXT        NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);

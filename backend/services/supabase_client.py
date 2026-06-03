@@ -73,3 +73,69 @@ def note_content(note: dict) -> dict:
         return json.loads(val)
     except Exception:
         return {}
+
+
+# ---------------------------------------------------------------------------
+# OAuth state helpers
+# ---------------------------------------------------------------------------
+
+def create_oauth_state(state: str, user_id: str, provider: str) -> None:
+    _client().table("oauth_states").insert({
+        "state": state,
+        "user_id": user_id,
+        "provider": provider,
+    }).execute()
+
+
+def pop_oauth_state(state: str) -> Optional[dict]:
+    result = (
+        _client()
+        .table("oauth_states")
+        .select("user_id, provider")
+        .eq("state", state)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        return None
+    _client().table("oauth_states").delete().eq("state", state).execute()
+    return result.data  # {"user_id": ..., "provider": ...}
+
+
+# ---------------------------------------------------------------------------
+# Integration CRUD helpers
+# ---------------------------------------------------------------------------
+
+def upsert_integration(user_id: str, provider: str, **fields) -> None:
+    _client().table("user_integrations").upsert({
+        "user_id": user_id,
+        "provider": provider,
+        "updated_at": "now()",
+        **fields,
+    }).execute()
+
+
+def get_integration(user_id: str, provider: str) -> Optional[dict]:
+    result = (
+        _client()
+        .table("user_integrations")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("provider", provider)
+        .maybe_single()
+        .execute()
+    )
+    return result.data
+
+
+def update_integration(user_id: str, provider: str, **fields) -> None:
+    if not fields:
+        return
+    _client().table("user_integrations").update({
+        "updated_at": "now()",
+        **fields,
+    }).eq("user_id", user_id).eq("provider", provider).execute()
+
+
+def delete_integration(user_id: str, provider: str) -> None:
+    _client().table("user_integrations").delete().eq("user_id", user_id).eq("provider", provider).execute()

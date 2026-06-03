@@ -13,6 +13,10 @@ class Settings:
     # Optional integrations
     NOTION_TOKEN: str = os.environ.get("NOTION_TOKEN", "")
     NOTION_DATABASE_ID: str = os.environ.get("NOTION_DATABASE_ID", "")
+    NOTION_OAUTH_CLIENT_ID: str = os.environ.get("NOTION_OAUTH_CLIENT_ID", "")
+    NOTION_OAUTH_CLIENT_SECRET: str = os.environ.get("NOTION_OAUTH_CLIENT_SECRET", "")
+    NOTION_REDIRECT_URI: str = os.environ.get("NOTION_REDIRECT_URI", "")
+    FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:8080")
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.environ.get("GOOGLE_REDIRECT_URI", "")
@@ -37,6 +41,10 @@ class Settings:
     @property
     def notion_enabled(self) -> bool:
         return bool(self.NOTION_TOKEN and self.NOTION_DATABASE_ID)
+
+    @property
+    def notion_oauth_enabled(self) -> bool:
+        return bool(self.NOTION_OAUTH_CLIENT_ID and self.NOTION_OAUTH_CLIENT_SECRET)
 
     @property
     def drive_enabled(self) -> bool:
