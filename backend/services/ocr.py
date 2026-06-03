@@ -1,4 +1,5 @@
-"""Mistral pixtral-12b OCR — ported from the original app.py with minor cleanup."""
+"""Mistral vision OCR -> structured JSON. Modelo configurable (OCR_MODEL)."""
+import os
 import base64
 import re
 import json
@@ -8,44 +9,54 @@ try:
 except ImportError:
     from mistralai.client import Mistral
 
-_PROMPT = """Analiza esta imagen de apuntes de clase y extrae TODO el contenido de forma estructurada.
+# Modelo de vision. pixtral-large es mucho mas preciso con formulas que pixtral-12b.
+# Configurable via env por si el plan no lo soporta; con fallback automatico.
+_OCR_MODEL = os.environ.get("OCR_MODEL", "pixtral-large-latest")
+_FALLBACK_MODEL = "pixtral-12b-2409"
 
-Devuelve un JSON con exactamente esta estructura:
+_PROMPT = r"""Eres un transcriptor experto de apuntes academicos (incluye matematicas y ciencias).
+Analiza la imagen y extrae TODO el contenido en un JSON con EXACTAMENTE esta estructura:
 {
-  "titulo": "título o tema principal si lo hay, sino null",
-  "texto_principal": "todo el texto corrido, párrafos y explicaciones",
+  "titulo": "titulo o tema principal si lo hay, sino null",
+  "texto_principal": "todo el texto corrido, parrafos y explicaciones",
   "formulas": [
-    {"descripcion": "nombre o contexto de la fórmula", "latex": "fórmula en LaTeX", "texto_plano": "fórmula en texto plano"}
+    {"descripcion": "nombre o contexto de la formula", "latex": "formula en LaTeX valido", "texto_plano": "formula en texto legible"}
   ],
   "listas": [
-    {"tipo": "numerada o viñetas", "items": ["item1", "item2"]}
+    {"tipo": "numerada o vinetas", "items": ["item1", "item2"]}
   ],
   "diagramas_figuras": [
-    {"descripcion": "descripción detallada del diagrama o figura"}
+    {"descripcion": "descripcion detallada del diagrama o figura"}
   ],
   "definiciones": [
-    {"termino": "término", "definicion": "definición"}
+    {"termino": "termino", "definicion": "definicion"}
   ],
-  "observaciones": "notas adicionales, subrayados importantes, anotaciones al margen",
+  "observaciones": "notas adicionales, subrayados, anotaciones al margen",
   "tags": ["Tag1", "Tag2", "Tag3"]
 }
 
-Reglas:
-- Si no hay contenido de un tipo, usa lista vacía [] o null
-- Las fórmulas matemáticas SIEMPRE en LaTeX válido
-- Transcribe TODO el texto visible, incluyendo texto pequeño y anotaciones
-- Para diagramas, describe lo que representan con detalle
-- "tags": array de 2-4 etiquetas que clasifiquen la materia/tema (ej: "Biología", "Cálculo", "Historia", "Química Orgánica", "Álgebra Lineal"). Máximo 4, mínimo 1. En español, capitalizadas.
-- Responde ÚNICAMENTE con el JSON, sin markdown ni explicaciones extra"""
+REGLAS PARA FORMULAS (criticas, hazlo con maximo cuidado):
+- Transcribe cada formula EXACTAMENTE como aparece, simbolo por simbolo. NO la simplifiques, NO la "corrijas", NO inventes terminos que no esten.
+- LaTeX VALIDO y renderable con KaTeX. Usa: \frac{a}{b} para fracciones, x^{2} para exponentes, x_{i} para subindices, \sqrt{}, \int, \sum, \prod, \lim, \partial, \nabla, vectores \vec{}, matrices con \begin{matrix}...\end{matrix}.
+- Letras griegas con su comando: \alpha \beta \gamma \delta \theta \lambda \mu \pi \sigma \omega \Delta \Sigma \Omega, etc.
+- Respeta parentesis, corchetes, limites de integrales/sumatorias (\int_{a}^{b}, \sum_{i=1}^{n}), y signos (=, \neq, \leq, \geq, \approx, \pm, \cdot, \times, \to, \infty).
+- Una entrada por formula independiente; NO juntes varias en una sola.
+- "texto_plano": version legible de la formula sin comandos LaTeX (ej: "integral de 0 a 1 de x^2 dx").
+- Si un simbolo es ambiguo, elige el mas probable pero conserva la estructura correcta.
+
+OTRAS REGLAS:
+- Si no hay contenido de un tipo, usa [] o null.
+- Transcribe TODO el texto visible, incluido texto pequeno y anotaciones.
+- Para diagramas, describe que representan con detalle.
+- "tags": 1-4 etiquetas de la materia/tema (ej: "Biologia", "Calculo", "Quimica Organica", "Algebra Lineal"), en espanol, capitalizadas.
+- Responde UNICAMENTE con el JSON, sin markdown ni explicaciones extra."""
 
 
-def extract_content(api_key: str, image_bytes: bytes, mime_type: str) -> dict:
-    """Call pixtral-12b and return the parsed JSON dict."""
-    client = Mistral(api_key=api_key)
-    b64 = base64.standard_b64encode(image_bytes).decode()
-
-    resp = client.chat.complete(
-        model="pixtral-12b-2409",
+def _call(client, model, b64, mime_type):
+    return client.chat.complete(
+        model=model,
+        temperature=0,
+        max_tokens=4096,
         messages=[{
             "role": "user",
             "content": [
@@ -54,6 +65,18 @@ def extract_content(api_key: str, image_bytes: bytes, mime_type: str) -> dict:
             ],
         }],
     )
+
+
+def extract_content(api_key: str, image_bytes: bytes, mime_type: str) -> dict:
+    """Llama al modelo de vision y devuelve el JSON parseado."""
+    client = Mistral(api_key=api_key)
+    b64 = base64.standard_b64encode(image_bytes).decode()
+
+    try:
+        resp = _call(client, _OCR_MODEL, b64, mime_type)
+    except Exception:
+        # Fallback si el modelo configurado no esta disponible en el plan
+        resp = _call(client, _FALLBACK_MODEL, b64, mime_type)
 
     raw = resp.choices[0].message.content.strip()
     if raw.startswith("```"):
